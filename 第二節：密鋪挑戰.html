@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>鋪磚挑戰</title>
+    <style>
+        :root {
+            --ipad-bg: #f4f6f9;
+            --land-border: #2c3e50;
+            --purple-tile: #9b59b6;
+            --blue-tile: #3498db;
+        }
+
+        body {
+            font-family: '微軟正黑體', sans-serif;
+            background-color: var(--ipad-bg);
+            text-align: center;
+            user-select: none;
+            overflow-y: auto; 
+            margin: 0;
+            padding-bottom: 140px; /* 增加底部緩衝空間給 iPad 工具列 */
+            touch-action: pan-y; 
+        }
+
+        h1 { 
+            color: #2c3e50; 
+            margin: 20px 0 5px 0; 
+            font-size: 28px; 
+            letter-spacing: 2px;
+        }
+
+        .subtitle { 
+            font-size: 16px; 
+            color: #7f8c8d; 
+            margin-bottom: 20px; 
+        }
+
+        /* 針對 iPad Air 4 的格線容器優化 */
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            width: 92vw; /* 稍微縮小寬度，兩側留白更像 iPad 介面 */
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: #bdc3c7;
+            gap: 3px;
+            border: 3px solid #7f8c8d;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            background-color: #dfe6e9;
+            padding: 15px;
+            font-weight: bold;
+            font-size: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: #2d3436;
+        }
+
+        .cell {
+            background-color: white;
+            height: 190px; /* iPad 垂直空間充足，略微拉高 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* 長方形土地樣式 */
+        .land {
+            border: 2px solid var(--land-border);
+            background-color: #ffffff;
+            position: relative;
+            box-sizing: content-box;
+            transition: background-color 0.3s;
+        }
+
+        /* 判定標誌 */
+        .status {
+            position: absolute;
+            right: 15px;
+            font-size: 60px;
+            font-family: "Arial Black", sans-serif;
+            pointer-events: none;
+            z-index: 100;
+        }
+        .ok { color: #27ae60; }
+        .no { color: #e74c3c; opacity: 0.8; }
+
+        /* 底部工具列優化 */
+        .palette {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 100px;
+            padding: 20px 0;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(5px);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            z-index: 1000;
+            touch-action: none; 
+            border-top: 1px solid #ddd;
+        }
+
+        .source-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            touch-action: none; 
+            transition: transform 0.2s;
+        }
+        .source-box:active { transform: scale(1.1); }
+
+        .sq-purple { width: 40px; height: 40px; background-color: var(--purple-tile); border: 1.5px solid #fff; box-sizing: border-box; border-radius: 2px; }
+        .sq-blue { width: 80px; height: 80px; background-color: var(--blue-tile); border: 1.5px solid #fff; box-sizing: border-box; border-radius: 2px; }
+
+        /* 拖拽圖形 */
+        .dragging {
+            position: fixed;
+            pointer-events: none;
+            z-index: 2000;
+            box-shadow: 5px 5px 20px rgba(0,0,0,0.4);
+            opacity: 0.9;
+        }
+
+        .placed-tile {
+            position: absolute;
+            border: 1px solid rgba(255,255,255,0.7);
+            box-sizing: border-box;
+            cursor: pointer;
+            animation: fadeIn 0.2s ease-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        button { 
+            padding: 15px 30px; 
+            border-radius: 12px; 
+            border: none; 
+            background: #2c3e50; 
+            color: white; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 18px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button:active { background: #34495e; transform: translateY(2px); }
+    </style>
+</head>
+<body>
+
+    <h1>🏰 鋪磚挑戰</h1>
+    <div class="subtitle">拖動方塊填滿土地。想一想：哪種單位的方塊最靈活？</div>
+
+    <div class="grid-container">
+        <!-- 標題欄 -->
+        <div class="header">邊長 1cm</div>
+        <div class="header">邊長 2cm</div>
+
+        <!-- 第1組: 4x4 (160x160px) -->
+        <div class="cell"><div id="L1" class="land" style="width:160px; height:160px;"></div><div id="S-L1" class="status"></div></div>
+        <div class="cell"><div id="R1" class="land" style="width:160px; height:160px;"></div><div id="S-R1" class="status"></div></div>
+
+        <!-- 第2組: 3x4 (160x120px) -->
+        <div class="cell"><div id="L2" class="land" style="width:160px; height:120px;"></div><div id="S-L2" class="status"></div></div>
+        <div class="cell"><div id="R2" class="land" style="width:160px; height:120px;"></div><div id="S-R2" class="status"></div></div>
+
+        <!-- 第3組: 2x4 (160x80px) -->
+        <div class="cell"><div id="L3" class="land" style="width:160px; height:80px;"></div><div id="S-L3" class="status"></div></div>
+        <div class="cell"><div id="R3" class="land" style="width:160px; height:80px;"></div><div id="S-R3" class="status"></div></div>
+
+        <!-- 第4組: 1x4 (160x40px) -->
+        <div class="cell"><div id="L4" class="land" style="width:160px; height:40px;"></div><div id="S-L4" class="status"></div></div>
+        <div class="cell"><div id="R4" class="land" style="width:160px; height:40px;"></div><div id="S-R4" class="status"></div></div>
+    </div>
+
+    <div class="palette">
+        <div class="source-box" onmousedown="grab(event, 40, '#9b59b6', 'L')" ontouchstart="grab(event, 40, '#9b59b6', 'L')">
+            <div class="sq-purple"></div>
+            <div style="margin-top:8px; font-weight:bold; color: #555;">1cm 磚塊</div>
+        </div>
+        
+        <button onclick="location.reload()">🔄 全部重來</button>
+
+        <div class="source-box" onmousedown="grab(event, 80, '#3498db', 'R')" ontouchstart="grab(event, 80, '#3498db', 'R')">
+            <div class="sq-blue"></div>
+            <div style="margin-top:8px; font-weight:bold; color: #555;">2cm 磚塊</div>
+        </div>
+    </div>
+
+    <script>
+        let dragEl = null;
+        let dSize = 0;
+        let dColor = '';
+        let dSide = ''; 
+
+        function grab(e, size, color, side) {
+            const touch = e.touches ? e.touches[0] : e;
+            dSize = size;
+            dColor = color;
+            dSide = side;
+
+            dragEl = document.createElement('div');
+            dragEl.className = 'dragging';
+            dragEl.style.width = size + 'px';
+            dragEl.style.height = size + 'px';
+            dragEl.style.backgroundColor = color;
+            dragEl.style.borderRadius = '2px';
+            document.body.appendChild(dragEl);
+            
+            updatePos(touch.pageX, touch.pageY);
+
+            const move = (ev) => {
+                if (ev.cancelable) ev.preventDefault(); 
+                const t = ev.touches ? ev.touches[0] : ev;
+                updatePos(t.pageX, t.pageY);
+            };
+
+            const stop = (ev) => {
+                const t = ev.changedTouches ? ev.changedTouches[0] : ev;
+                putDown(t.clientX, t.clientY);
+                window.removeEventListener('mousemove', move);
+                window.removeEventListener('touchmove', move);
+                window.removeEventListener('mouseup', stop);
+                window.removeEventListener('touchend', stop);
+                if (dragEl) dragEl.remove();
+                dragEl = null;
+            };
+
+            window.addEventListener('mousemove', move);
+            window.addEventListener('touchmove', move, { passive: false });
+            window.addEventListener('mouseup', stop);
+            window.addEventListener('touchend', stop);
+        }
+
+        function updatePos(x, y) {
+            if (!dragEl) return;
+            dragEl.style.left = (x - dSize / 2) + 'px';
+            dragEl.style.top = (y - dSize / 2) + 'px';
+        }
+
+        function putDown(clientX, clientY) {
+            const lands = dSide === 'L' ? ['L1','L2','L3','L4'] : ['R1','R2','R3','R4'];
+            
+            for (let id of lands) {
+                const el = document.getElementById(id);
+                const rect = el.getBoundingClientRect();
+
+                if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom) {
+                    let relX = clientX - rect.left;
+                    let relY = clientY - rect.top;
+
+                    let snapX = Math.floor(relX / dSize) * dSize;
+                    let snapY = Math.floor(relY / dSize) * dSize;
+
+                    // 寬度統一為 160px，磁吸嚴格判定
+                    if (snapX + dSize > el.offsetWidth + 3 || snapY + dSize > el.offsetHeight + 3) {
+                        continue; 
+                    }
+
+                    const isOverlap = Array.from(el.children).some(child => 
+                        Math.abs(parseInt(child.style.left) - snapX) < 5 && 
+                        Math.abs(parseInt(child.style.top) - snapY) < 5
+                    );
+
+                    if (!isOverlap) {
+                        const tile = document.createElement('div');
+                        tile.className = 'placed-tile';
+                        tile.style.width = dSize + 'px';
+                        tile.style.height = dSize + 'px';
+                        tile.style.left = snapX + 'px';
+                        tile.style.top = snapY + 'px';
+                        tile.style.backgroundColor = dColor;
+                        
+                        tile.onclick = () => { 
+                            tile.remove(); 
+                            updateStatus(id); 
+                        };
+
+                        el.appendChild(tile);
+                        updateStatus(id);
+                    }
+                    break;
+                }
+            }
+        }
+
+        function updateStatus(id) {
+            const el = document.getElementById(id);
+            const statusEl = document.getElementById('S-' + id);
+            const tiles = el.children.length;
+            
+            // 寬度統一為 4cm (4個1cm單位)
+            const specs = {
+                '1': { w: 4, h: 4 },
+                '2': { w: 4, h: 3 },
+                '3': { w: 4, h: 2 },
+                '4': { w: 4, h: 1 }
+            };
+            
+            const num = id.substring(1);
+            const spec = specs[num];
+            const isLeft = id.startsWith('L');
+            
+            if (isLeft) {
+                const needed = spec.w * spec.h;
+                if (tiles >= needed) {
+                    statusEl.innerText = "✓";
+                    statusEl.className = "status ok";
+                } else {
+                    statusEl.innerText = "";
+                }
+            } else {
+                // 2cm 單位判定邏輯
+                const canFit = (spec.w * 40 % 80 === 0) && (spec.h * 40 % 80 === 0);
+                if (!canFit) {
+                    statusEl.innerText = (tiles > 0) ? "✕" : "";
+                    statusEl.className = "status no";
+                } else {
+                    const needed = (spec.w * 40 / 80) * (spec.h * 40 / 80);
+                    if (tiles >= needed) {
+                        statusEl.innerText = "✓";
+                        statusEl.className = "status ok";
+                    } else {
+                        statusEl.innerText = "";
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
