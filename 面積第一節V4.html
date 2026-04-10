@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>破案關鍵：選用合適圖形測量</title>
+    <style>
+        :root {
+            --ipad-bg: #f8f9fa;
+            --sidebar-width: 280px;
+        }
+
+        body {
+            font-family: '微軟正黑體', sans-serif;
+            background-color: var(--ipad-bg);
+            text-align: center;
+            user-select: none;
+            overflow: hidden;
+            margin: 0;
+            touch-action: none; 
+        }
+
+        h1 { color: #2c3e50; margin: 20px 0 10px 0; font-size: 26px; letter-spacing: 1px; }
+
+        /* 主容器佈局 */
+        .main-layout {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 20px;
+            padding: 0 20px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* 舞台區域 */
+        .stage-container {
+            position: relative;
+            width: 750px;
+            height: 420px;
+            border-bottom: 4px solid #7f8c8d;
+            background-color: #ecf0f1;
+            background-image: radial-gradient(#bdc3c7 1px, transparent 1px);
+            background-size: 30px 30px;
+            border-radius: 8px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+        }
+
+        /* 筆記區樣式 */
+        .notebook {
+            width: var(--sidebar-width);
+            background-color: #fff;
+            border: 2px solid #34495e;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.1);
+            text-align: left;
+        }
+
+        .notebook h3 { margin-top: 0; color: #e67e22; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .note-row { margin-bottom: 20px; font-size: 18px; line-height: 1.8; color: #34495e; }
+
+        input[type="number"] {
+            width: 60px;
+            font-size: 20px;
+            padding: 5px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        select {
+            font-size: 18px;
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #bdc3c7;
+            background-color: #fafafa;
+        }
+
+        .land {
+            position: absolute;
+            border: 3px solid #2c3e50;
+            box-sizing: content-box; 
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
+            overflow: visible; 
+        }
+
+        #blueLand { width: 240px; height: 180px; top: 100px; left: 60px; background-color: rgba(52, 152, 219, 0.4); }
+        #redLand { width: 300px; height: 120px; top: 130px; left: 380px; background-color: rgba(231, 76, 60, 0.4); }
+
+        /* 底部圖形庫 */
+        .palette {
+            margin-top: 25px;
+            padding: 15px 40px;
+            background-color: #fff;
+            border-radius: 50px;
+            display: inline-flex;
+            gap: 60px;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .tool-box { display: flex; flex-direction: column; align-items: center; touch-action: none; }
+        .tool-icon { width: 60px; height: 60px; display: flex; justify-content: center; align-items: center; border: 2px dashed #bdc3c7; background: #fafafa; }
+        .tool-label { margin-top: 8px; font-size: 16px; font-weight: bold; color: #7f8c8d; }
+
+        /* 圖形樣式 */
+        .tile {
+            width: 60px; height: 60px;
+            position: absolute;
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+            transition: transform 0.2s, left 0.2s;
+        }
+
+        .square-shape .inner { width: 100%; height: 100%; background-color: #27ae60; border: 1px solid #fff; }
+        .circle-shape .inner { width: 58px; height: 58px; border-radius: 50%; background-color: #f39c12; border: 1px solid #d35400; }
+        .triangle-shape .inner { width: 100%; height: 100%; background-color: #8e44ad; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); }
+        
+        .rotated { transform: rotate(180deg) translateX(-30px); }
+
+        .dragging { position: fixed; pointer-events: none; z-index: 2000; opacity: 0.9; box-shadow: 5px 5px 20px rgba(0,0,0,0.3); }
+        .placed-tile { pointer-events: auto; cursor: pointer; }
+
+        .btn-action {
+            padding: 10px 25px; font-size: 18px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin: 0 5px;
+        }
+        .btn-clear { background-color: #3498db; color: white; }
+        .btn-reset { background-color: #e74c3c; color: white; }
+    </style>
+</head>
+<body>
+
+    <h1>🔍 破案關鍵：選用合適圖形測量</h1>
+    
+    <div class="main-layout">
+        <!-- 筆記區 (左側) -->
+        <div class="notebook">
+            <h3>📝 偵查筆記</h3>
+            <div class="note-row">
+                藍色土地用了<br>
+                <input type="number" placeholder="0"> 個
+                <select>
+                    <option>正方形</option>
+                    <option>圓形</option>
+                    <option>三角形</option>
+                </select>
+            </div>
+            <div class="note-row">
+                紅色土地用了<br>
+                <input type="number" placeholder="0"> 個
+                <select>
+                    <option>正方形</option>
+                    <option>圓形</option>
+                    <option>三角形</option>
+                </select>
+            </div>
+            <hr>
+            <button class="btn-action btn-clear" onclick="clearTiles()">🧹 清除圖形</button>
+            <button class="btn-action btn-reset" style="margin-top:10px" onclick="location.reload()">🔄 全部重置</button>
+        </div>
+
+        <!-- 舞台區 (右側) -->
+        <div class="stage-container" id="stage">
+            <div id="blueLand" class="land"></div>
+            <div id="redLand" class="land"></div>
+        </div>
+    </div>
+
+    <!-- 下方工具列 -->
+    <div class="palette">
+        <div class="tool-box" onmousedown="startDrag(event, 'square')" ontouchstart="startDrag(event, 'square')">
+            <div class="tool-icon square-shape"><div class="inner"></div></div>
+            <div class="tool-label">正方形</div>
+        </div>
+        <div class="tool-box" onmousedown="startDrag(event, 'circle')" ontouchstart="startDrag(event, 'circle')">
+            <div class="tool-icon circle-shape"><div class="inner"></div></div>
+            <div class="tool-label">圓形</div>
+        </div>
+        <div class="tool-box" onmousedown="startDrag(event, 'triangle')" ontouchstart="startDrag(event, 'triangle')">
+            <div class="tool-icon triangle-shape"><div class="inner"></div></div>
+            <div class="tool-label">三角形</div>
+        </div>
+    </div>
+
+    <script>
+        const blueLand = document.getElementById('blueLand');
+        const redLand = document.getElementById('redLand');
+        
+        let dragItem = null;
+        let lockedShapeType = null;
+        const GRID_SIZE = 60; 
+
+        function clearTiles() {
+            document.querySelectorAll('.placed-tile').forEach(t => t.remove());
+            lockedShapeType = null;
+        }
+
+        function startDrag(e, type) {
+            if (lockedShapeType && lockedShapeType !== type) {
+                alert("為了測量準確，請統一使用同一種圖形喔！");
+                return;
+            }
+
+            const touch = e.touches ? e.touches[0] : e;
+            
+            dragItem = document.createElement('div');
+            dragItem.className = `tile ${type}-shape dragging`;
+            dragItem.innerHTML = '<div class="inner"></div>';
+            document.body.appendChild(dragItem);
+            
+            updatePos(touch.clientX, touch.clientY);
+
+            const moveHandler = (ev) => {
+                if (ev.cancelable) ev.preventDefault();
+                const t = ev.touches ? ev.touches[0] : ev;
+                updatePos(t.clientX, t.clientY);
+            };
+
+            const upHandler = (ev) => {
+                const t = ev.changedTouches ? ev.changedTouches[0] : ev;
+                window.removeEventListener('mousemove', moveHandler);
+                window.removeEventListener('touchmove', moveHandler);
+                window.removeEventListener('mouseup', upHandler);
+                window.removeEventListener('touchend', upHandler);
+                dropItem(t.clientX, t.clientY, type);
+            };
+
+            window.addEventListener('mousemove', moveHandler);
+            window.addEventListener('touchmove', moveHandler, { passive: false });
+            window.addEventListener('mouseup', upHandler);
+            window.addEventListener('touchend', upHandler);
+        }
+
+        function updatePos(x, y) {
+            if (!dragItem) return;
+            dragItem.style.left = (x - 30) + 'px';
+            dragItem.style.top = (y - 30) + 'px';
+        }
+
+        function dropItem(clientX, clientY, type) {
+            const blueRect = blueLand.getBoundingClientRect();
+            const redRect = redLand.getBoundingClientRect();
+            let target = null;
+
+            if (isInside(clientX, clientY, blueRect)) target = { el: blueLand, rect: blueRect };
+            else if (isInside(clientX, clientY, redRect)) target = { el: redLand, rect: redRect };
+
+            if (target) {
+                lockedShapeType = type;
+                let relX = clientX - target.rect.left;
+                let relY = clientY - target.rect.top;
+                
+                let snapX = Math.floor(relX / GRID_SIZE) * GRID_SIZE;
+                let snapY = Math.floor(relY / GRID_SIZE) * GRID_SIZE;
+
+                // 防止超出邊界
+                if (snapX + GRID_SIZE > target.el.offsetWidth + 5) snapX = target.el.offsetWidth - GRID_SIZE;
+                if (snapY + GRID_SIZE > target.el.offsetHeight + 5) snapY = target.el.offsetHeight - GRID_SIZE;
+
+                const tile = document.createElement('div');
+                tile.className = `tile ${type}-shape placed-tile`;
+                tile.innerHTML = '<div class="inner"></div>';
+                tile.style.left = snapX + 'px';
+                tile.style.top = snapY + 'px';
+                
+                tile.onclick = (event) => {
+                    event.stopPropagation();
+                    if (type === 'triangle') {
+                        tile.classList.toggle('rotated');
+                    } else {
+                        tile.remove();
+                        if (document.querySelectorAll('.placed-tile').length === 0) lockedShapeType = null;
+                    }
+                };
+
+                target.el.appendChild(tile);
+            }
+            if (dragItem) dragItem.remove();
+            dragItem = null;
+        }
+
+        function isInside(x, y, rect) {
+            return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+        }
+    </script>
+</body>
+</html>
