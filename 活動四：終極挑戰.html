@@ -3,16 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>終極謎題：基德的秘密房間 (iPad 完美適配版)</title>
+    <title>終極謎題：基德的秘密房間 (iPad 觸控修復版)</title>
     <style>
         /* ================= 平台基礎設定 (iPad Retina 優化) ================= */
         body {
             font-family: -apple-system, "Microsoft JhengHei", "PingFang TC", sans-serif;
             background-color: #1a252f; 
             background-image: radial-gradient(circle at 50% 0%, #2c3e50 0%, #1a252f 80%);
-            margin: 0; padding: 0; 
-            height: 100vh; height: 100dvh; /* 動態視窗高度，避開 Safari 工具列 */
-            display: flex; flex-direction: column;
+            margin: 0; padding: 0; height: 100vh; height: 100dvh; display: flex; flex-direction: column;
             user-select: none; overflow: hidden; -webkit-user-select: none; -webkit-touch-callout: none;
             -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
         }
@@ -20,12 +18,12 @@
         /* --- 頂部導航 --- */
         header {
             width: 100%; background-color: rgba(26, 37, 47, 0.9); border-bottom: 2px solid #f39c12;
-            color: white; padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; 
+            color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; 
             box-sizing: border-box; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 100; flex-shrink: 0;
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
         }
-        h1 { margin: 0; font-size: 22px; color: #f1c40f; text-shadow: 0 0 10px rgba(241,196,15,0.5);}
-        .instructions { font-size: 15px; color: #bdc3c7; margin-left: 15px; }
+        h1 { margin: 0; font-size: 24px; color: #f1c40f; text-shadow: 0 0 10px rgba(241,196,15,0.5);}
+        .instructions { font-size: 16px; color: #bdc3c7; margin-left: 15px; }
 
         /* --- 佈局容器 --- */
         .app-container {
@@ -44,7 +42,7 @@
             border: 2px solid #34495e; position: relative;
         }
 
-        /* 網格大小微調至 40px 以適應 iPad 橫向高度 */
+        /* 網格大小設定 */
         .grid {
             display: grid; grid-template-columns: repeat(12, 1fr);
             background-color: #2c3e50; border: 4px solid #f39c12; box-shadow: 0 0 30px rgba(243,156,18,0.2);
@@ -118,7 +116,6 @@
             background: white; border-radius: 25px; width: 85%; max-width: 650px; padding: 35px;
             box-shadow: 0 25px 50px rgba(0,0,0,0.5); text-align: center; position: relative;
             animation: superPopIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            /* 防止內容過長被裁切 */
             max-height: 90dvh; overflow-y: auto; -webkit-overflow-scrolling: touch;
         }
         @keyframes superPopIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
@@ -168,11 +165,9 @@
         
         <!-- 視覺化無縫 L型圖形 -->
         <div style="margin: 25px auto; position: relative; width: 160px; height: 120px; filter: drop-shadow(5px 5px 10px rgba(0,0,0,0.2));">
-            <!-- 底部長條 -->
             <div style="position: absolute; bottom: 0; left: 0; width: 160px; height: 60px; background: #9b59b6; border: 4px solid #8e44ad; box-sizing: border-box; display: flex; justify-content: flex-end; align-items: center; padding-right: 15px;">
                 <span style="font-size: 16px; font-weight: bold; color: white;">面積 = 24 平方米</span>
             </div>
-            <!-- 左上角方塊 (加高4px覆蓋底部的上邊框，達成無縫融合) -->
             <div style="position: absolute; top: 0; left: 0; width: 60px; height: 64px; background: #9b59b6; border: 4px solid #8e44ad; border-bottom: none; box-sizing: border-box;"></div>
         </div>
 
@@ -207,7 +202,7 @@
         
         <div class="clue-box">
             <div class="clue-title">🔑 終極密碼條件：</div>
-            <div class="clue-text">房間的面積必須剛好等於 <strong style="color:#e74c3c; font-size: 26px;">24 平方米</strong></div>
+            <div class="clue-text">房間的面積必須剛好等於 <strong style="color:#e74c3c; font-size: 28px;">24 平方米</strong></div>
         </div>
 
         <!-- 收集長方形 -->
@@ -223,22 +218,19 @@
 
 <script>
     // ================= 核心設定 =================
-    // 畫板尺寸 12x12。
-    // 面積為24的長方形組合：(1x24, 2x12, 3x8, 4x6)。因為邊長限制為12，所以1x24畫不出來。
-    // 學生剛好只能找出 (2x12, 3x8, 4x6) 這 3 種組合，完美窮舉！
     const ROWS = 12; const COLS = 12; const TARGET_AREA = 24;
     let grid = document.getElementById('grid');
     let cells =[];
     
     let gameActive = false; 
-    let foundRects =[]; // 紀錄找到的組合，如 "4x6"
-    const REQUIRED_RECTS = 3; // 需要找到 3 種組合
+    let foundRects =[]; 
+    const REQUIRED_RECTS = 3; 
 
     // 拖曳狀態
     let isDragging = false;
     let startR = 0, startC = 0;
 
-    // ================= 初始化畫板 =================
+    // ================= 初始化畫板 (綁定 iPad 防呆事件) =================
     function initGrid() {
         grid.innerHTML = '';
         cells =[];
@@ -251,14 +243,18 @@
                 grid.appendChild(cell);
                 rowArr.push(cell);
                 
-                // 綁定觸控與滑鼠事件 (統一使用 pointer events)
+                // 僅保留 pointerdown 來觸發起始點
                 cell.addEventListener('pointerdown', handlePointerDown);
-                cell.addEventListener('pointerenter', handlePointerEnter);
             }
             cells.push(rowArr);
         }
+        
+        // 【核心修復】在全域監聽移動與放開，完美支援 iPad 觸控滑動
+        document.addEventListener('pointermove', handlePointerMove);
         document.addEventListener('pointerup', handlePointerUp);
-        // 在觸控螢幕上順暢拖曳，防止 Safari 捲動
+        document.addEventListener('pointercancel', handlePointerUp);
+
+        // 防止在格子上滑動時，Safari 整個網頁被拖著走
         grid.addEventListener('touchmove', (e) => { e.preventDefault(); }, {passive: false});
     }
 
@@ -274,14 +270,17 @@
         document.getElementById('dynamic-hint').innerHTML = "🎉 恭喜完成所有挑戰！請等待老師指示。";
     }
 
-    // ================= 互動邏輯 =================
+    // ================= iPad 專屬互動邏輯 ( elementFromPoint ) =================
     function handlePointerDown(e) {
         if(!gameActive) return;
-        e.preventDefault();
         
-        // 確保點擊的是格子
+        // 釋放 Pointer Capture，讓 elementFromPoint 可以在滑動時正確抓到格子
+        if(e.pointerId) {
+            try { e.target.releasePointerCapture(e.pointerId); } catch(err){}
+        }
+
         if(!e.target.classList.contains('cell')) return;
-        
+
         let r = parseInt(e.target.dataset.r);
         let c = parseInt(e.target.dataset.c);
 
@@ -291,11 +290,23 @@
         updateRectPreview(r, c);
     }
 
-    function handlePointerEnter(e) {
-        if (gameActive && isDragging) {
-            let r = parseInt(e.target.dataset.r);
-            let c = parseInt(e.target.dataset.c);
-            updateRectPreview(r, c);
+    function handlePointerMove(e) {
+        if (!gameActive || !isDragging) return;
+
+        // 取得精準的觸控/滑鼠坐標
+        let x = e.clientX;
+        let y = e.clientY;
+        if (x === undefined && e.touches && e.touches.length > 0) {
+            x = e.touches[0].clientX;
+            y = e.touches[0].clientY;
+        }
+
+        // 利用座標找出手指目前滑到了哪個格子
+        let elem = document.elementFromPoint(x, y);
+        if (elem && elem.classList.contains('cell')) {
+            let currR = parseInt(elem.dataset.r);
+            let currC = parseInt(elem.dataset.c);
+            updateRectPreview(currR, currC);
         }
     }
 
@@ -345,7 +356,6 @@
         if(!currentRect) return;
         
         if (currentRect.isValid) {
-            // 將長寬排序，確保 4x6 和 6x4 視為同一組
             let minSide = Math.min(currentRect.w, currentRect.h);
             let maxSide = Math.max(currentRect.w, currentRect.h);
             let comboId = minSide + "x" + maxSide;
@@ -353,9 +363,8 @@
             if (!foundRects.includes(comboId)) {
                 foundRects.push(comboId);
                 
-                // 呼叫動態添加圖形函數
+                // 動態添加圖形
                 addFoundItemVisual(currentRect.w, currentRect.h);
-                
                 document.getElementById('found-count').innerText = foundRects.length;
 
                 for(let r=currentRect.minR; r<=currentRect.maxR; r++){
@@ -364,7 +373,7 @@
                     }
                 }
                 
-                // 判斷是否找齊 3 種
+                // 判斷是否找齊
                 if(foundRects.length >= REQUIRED_RECTS) {
                     gameActive = false; 
                     document.getElementById('dynamic-hint').innerHTML = "✨ 找齊 3 種長方形了！";
@@ -391,7 +400,6 @@
         const item = document.createElement('div');
         item.className = 'found-item';
 
-        // 產生內部方塊 HTML 字串 (設定為 14px 完美對齊網格)
         let cellsHtml = '';
         for(let i=0; i < w * h; i++) {
             cellsHtml += `<div style="width: 14px; height: 14px; background-color: #f1c40f; border: 1px solid #f39c12; box-shadow: inset 0 0 2px rgba(211,84,0,0.3); box-sizing: border-box;"></div>`;
@@ -407,8 +415,6 @@
             </div>
         `;
         list.appendChild(item);
-        
-        // 自動捲動到底部
         list.scrollTop = list.scrollHeight;
     }
 
