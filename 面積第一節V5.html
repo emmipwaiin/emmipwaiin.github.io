@@ -64,7 +64,7 @@
             border: 3px solid #2c3e50;
             box-sizing: content-box; 
             background-color: rgba(255,255,255,0.3);
-            overflow: hidden; 
+            overflow: visible; 
         }
 
         #blueLand { width: 240px; height: 180px; top: 80px; left: 40px; background-color: rgba(52, 152, 219, 0.4); }
@@ -76,7 +76,7 @@
             background-color: #fff;
             border-radius: 50px;
             display: inline-flex;
-            gap: 30px;
+            gap: 20px;
             align-items: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
@@ -86,26 +86,17 @@
             width: 60px; height: 60px; 
             display: flex; justify-content: center; align-items: center; 
             border: 1px dashed #bdc3c7; background: #fafafa; 
-            flex-shrink: 0; /* 防止圓形變形 */
         }
         .tool-label { margin-top: 4px; font-size: 13px; font-weight: bold; color: #7f8c8d; }
 
-        /* 圖形樣式 */
-        .tile { width: 60px; height: 60px; position: absolute; pointer-events: none; flex-shrink: 0; }
+        .tile { width: 60px; height: 60px; position: absolute; pointer-events: none; z-index: 10; }
+        .inner { width: 60px; height: 60px; box-sizing: border-box; }
         
-        .square-shape .inner { width: 60px; height: 60px; background-color: #27ae60; border: 1px solid #fff; box-sizing: border-box; }
-        
-        .circle-shape .inner { 
-            width: 58px; height: 58px; 
-            border-radius: 50%; 
-            background-color: #f39c12; 
-            border: 1px solid #d35400; 
-            box-sizing: border-box;
-            flex-shrink: 0;
-        }
-        
-        .tri-up .inner { width: 60px; height: 60px; background-color: #8e44ad; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); }
-        .tri-down .inner { width: 60px; height: 60px; background-color: #9b59b6; clip-path: polygon(0% 0%, 100% 0%, 50% 100%); }
+        /* 樣式定義 */
+        .square-shape .inner { background-color: #27ae60; border: 1px solid #fff; }
+        .circle-shape .inner { border-radius: 50%; background-color: #f39c12; border: 1px solid #d35400; }
+        .tri-up .inner { background-color: #8e44ad; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); }
+        .tri-down .inner { background-color: #9b59b6; clip-path: polygon(0% 0%, 100% 0%, 50% 100%); }
         
         .dragging { position: fixed; pointer-events: none; z-index: 2000; opacity: 0.9; }
         .placed-tile { pointer-events: auto; cursor: pointer; }
@@ -125,14 +116,14 @@
             <div class="note-row">
                 藍色土地用了<br>
                 <input type="number"> 個
-                <select>
+                <select id="unit-blue">
                     <option>正方形</option><option>圓形</option><option>三角形</option>
                 </select>
             </div>
             <div class="note-row">
                 紅色土地用了<br>
                 <input type="number"> 個
-                <select>
+                <select id="unit-red">
                     <option>正方形</option><option>圓形</option><option>三角形</option>
                 </select>
             </div>
@@ -147,19 +138,19 @@
     </div>
 
     <div class="palette">
-        <div class="tool-box" onmousedown="handleStart(event, 'square')" ontouchstart="handleStart(event, 'square')">
+        <div class="tool-box" onmousedown="initDrag(event, 'square-shape')" ontouchstart="initDrag(event, 'square-shape')">
             <div class="tool-icon square-shape"><div class="inner"></div></div>
             <div class="tool-label">正方形</div>
         </div>
-        <div class="tool-box" onmousedown="handleStart(event, 'circle')" ontouchstart="handleStart(event, 'circle')">
+        <div class="tool-box" onmousedown="initDrag(event, 'circle-shape')" ontouchstart="initDrag(event, 'circle-shape')">
             <div class="tool-icon circle-shape"><div class="inner"></div></div>
             <div class="tool-label">圓形</div>
         </div>
-        <div class="tool-box" onmousedown="handleStart(event, 'tri-up')" ontouchstart="handleStart(event, 'tri-up')">
+        <div class="tool-box" onmousedown="initDrag(event, 'tri-up')" ontouchstart="initDrag(event, 'tri-up')">
             <div class="tool-icon tri-up"><div class="inner"></div></div>
             <div class="tool-label">正三角</div>
         </div>
-        <div class="tool-box" onmousedown="handleStart(event, 'tri-down')" ontouchstart="handleStart(event, 'tri-down')">
+        <div class="tool-box" onmousedown="initDrag(event, 'tri-down')" ontouchstart="initDrag(event, 'tri-down')">
             <div class="tool-icon tri-down"><div class="inner"></div></div>
             <div class="tool-label">倒三角</div>
         </div>
@@ -177,60 +168,58 @@
             lockedMainType = null;
         }
 
-        function handleStart(e, type) {
-            // 單位鎖定邏輯
-            let mainType = type.startsWith('tri') ? 'triangle' : type;
+        function initDrag(e, type) {
+            e.preventDefault();
+            
+            // 修正判定邏輯：將具體的 class 轉換為大類別
+            let mainType = '';
+            if (type.includes('square')) mainType = 'square';
+            else if (type.includes('circle')) mainType = 'circle';
+            else if (type.includes('tri')) mainType = 'triangle';
+
+            // 檢查是否鎖定單位
             if (lockedMainType && lockedMainType !== mainType) {
-                alert("為了測量準確，請不要混用不同形狀的單位喔！");
+                alert("為了測量準確，請統一使用同一種單位的圖形！");
                 return;
             }
 
             const touch = e.touches ? e.touches[0] : e;
-            
-            // 創建拖拽虛像
             dragItem = document.createElement('div');
             dragItem.className = `tile ${type} dragging`;
             dragItem.innerHTML = '<div class="inner"></div>';
             document.body.appendChild(dragItem);
             
-            updatePos(touch.clientX, touch.clientY);
+            moveDrag(touch.clientX, touch.clientY);
 
-            // 監聽移動與結束
             const moveHandler = (ev) => {
                 const t = ev.touches ? ev.touches[0] : ev;
-                updatePos(t.clientX, t.clientY);
-                if (ev.cancelable) ev.preventDefault();
+                moveDrag(t.clientX, t.clientY);
             };
 
-            const upHandler = (ev) => {
+            const endHandler = (ev) => {
                 const t = ev.changedTouches ? ev.changedTouches[0] : ev;
-                dropItem(t.clientX, t.clientY, type, mainType);
-                
+                dropDrag(t.clientX, t.clientY, type, mainType);
                 window.removeEventListener('mousemove', moveHandler);
                 window.removeEventListener('touchmove', moveHandler);
-                window.removeEventListener('mouseup', upHandler);
-                window.removeEventListener('touchend', upHandler);
-                
-                if (dragItem) {
-                    dragItem.remove();
-                    dragItem = null;
-                }
+                window.removeEventListener('mouseup', endHandler);
+                window.removeEventListener('touchend', endHandler);
+                if (dragItem) { dragItem.remove(); dragItem = null; }
             };
 
             window.addEventListener('mousemove', moveHandler);
             window.addEventListener('touchmove', moveHandler, { passive: false });
-            window.addEventListener('mouseup', upHandler);
-            window.addEventListener('touchend', upHandler);
+            window.addEventListener('mouseup', endHandler);
+            window.addEventListener('touchend', endHandler);
         }
 
-        function updatePos(x, y) {
+        function moveDrag(x, y) {
             if (!dragItem) return;
-            // iPad Air 4 座標對齊
+            // 指尖對準圖形中心
             dragItem.style.left = (x - 30) + 'px';
             dragItem.style.top = (y - 30) + 'px';
         }
 
-        function dropItem(clientX, clientY, specificType, mainType) {
+        function dropDrag(clientX, clientY, specificType, mainType) {
             const blueRect = blueLand.getBoundingClientRect();
             const redRect = redLand.getBoundingClientRect();
             let target = null;
@@ -246,11 +235,15 @@
                 let snapX = Math.floor(relX / GRID_SIZE) * GRID_SIZE;
                 let snapY = Math.floor(relY / GRID_SIZE) * GRID_SIZE;
 
-                // 邊界防溢出
+                // 三角形填補邏輯：倒三角形向右偏移 30px
+                if (specificType === 'tri-down') {
+                    snapX += 30;
+                }
+
+                // 邊界安全檢查
                 if (snapX < 0) snapX = 0;
-                if (snapX + GRID_SIZE > target.el.offsetWidth) snapX = target.el.offsetWidth - GRID_SIZE;
-                if (snapY < 0) snapY = 0;
-                if (snapY + GRID_SIZE > target.el.offsetHeight) snapY = target.el.offsetHeight - GRID_SIZE;
+                if (snapX + GRID_SIZE > target.el.offsetWidth + 10) snapX = target.el.offsetWidth - GRID_SIZE;
+                if (snapY + GRID_SIZE > target.el.offsetHeight + 10) snapY = target.el.offsetHeight - GRID_SIZE;
 
                 const tile = document.createElement('div');
                 tile.className = `tile ${specificType} placed-tile`;
@@ -258,7 +251,6 @@
                 tile.style.left = snapX + 'px';
                 tile.style.top = snapY + 'px';
                 
-                // 點擊移除
                 tile.onclick = (event) => {
                     event.stopPropagation();
                     tile.remove();
