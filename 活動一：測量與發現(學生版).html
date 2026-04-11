@@ -3,17 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>面積探險家 (雙行輸入+非阻塞提示版)</title>
+    <title>面積探險家 (iPad優化版 - 固定版面)</title>
     <style>
         body { 
-            font-family: "Microsoft JhengHei", sans-serif; background: #f0f8ff; margin: 0; height: 100vh; display: flex; flex-direction: column; 
+            font-family: "Microsoft JhengHei", sans-serif; background: #f0f8ff; margin: 0; 
+            height: 100dvh; height: 100vh; display: flex; flex-direction: column; 
             user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none;
+            overflow: hidden;
         }
         header { 
             background: #2c3e50; color: white; padding: 12px 20px; font-size: 20px; font-weight: bold;
             display: flex; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 200; 
+            flex-shrink: 0;
         }
-        .app-body { display: flex; flex: 1; height: calc(100vh - 50px); position: relative; overflow: hidden; }
+        .app-body { display: flex; flex: 1; height: 100dvh; height: calc(100vh - 50px); position: relative; overflow: hidden; }
         .history-panel {
             width: 240px; background: #dfe6e9; border-right: 2px solid #bdc3c7; box-shadow: 2px 0 10px rgba(0,0,0,0.05);
             display: flex; flex-direction: column; align-items: center; padding: 15px 8px; overflow-y: auto; z-index: 100; flex-shrink: 0;
@@ -35,23 +38,27 @@
             padding: 15px; overflow-y: auto; box-sizing: border-box;
             transition: padding-right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
             z-index: 10; justify-content: flex-start;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: auto;
         }
         body.kb-show .main-layout { padding-right: 300px; } 
         .stage { 
             background: white; padding: 25px 20px; border-radius: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); 
             text-align: center; width: 100%; max-width: 850px; position: relative; margin-bottom: 30px;
+            flex-shrink: 0; transform: translateZ(0); will-change: transform;
             transition: opacity 0.3s, filter 0.3s;
         }
-        .stage.dimmed { opacity: 0.6; filter: blur(1px); pointer-events: none; }
+        .stage.dimmed { opacity: 0.6; filter: blur(1px) brightness(0.95); pointer-events: none; }
         .task-title { font-size: 24px; color: #d35400; margin: 0 0 8px 0; border-bottom: 2px dashed #f1c40f; padding-bottom: 8px; }
         .task-desc { font-size: 17px; color: #555; margin-bottom: 15px; line-height: 1.5; }
         .shape-container { 
             display: flex; justify-content: center; align-items: flex-start; gap: 50px; 
-            margin-bottom: 15px; flex-wrap: wrap; padding: 5px;
+            margin-bottom: 10px; flex-wrap: wrap; padding: 5px; flex-shrink: 0;
         }
         .shape-box { 
             position: relative; display: inline-block; 
             margin: 55px 65px 15px 65px; 
+            transform: translateZ(0); contain: layout style;
         }
         .ruler-w { position: absolute; top: -42px; left: 50%; transform: translateX(-50%); font-size: 20px; font-weight: bold; color: #d35400; white-space: nowrap; }
         .ruler-h { position: absolute; left: -62px; top: 50%; transform: translateY(-50%); font-size: 20px; font-weight: bold; color: #d35400; white-space: nowrap; }
@@ -88,11 +95,11 @@
             box-shadow: 5px 5px 15px rgba(0,0,0,0.3); pointer-events: none; z-index: 9999; transform: scale(1.1);
         }
 
-        /* ✅ 雙行輸入區優化 */
+        /* 雙行輸入區優化 */
         .input-group { 
             margin: 12px auto; width: 100%; max-width: 460px;
             background: #fff9e6; border: 2px dashed #f39c12; padding: 14px 18px; border-radius: 16px;
-            display: flex; flex-direction: column; gap: 10px;
+            display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;
         }
         .input-row {
             display: flex; align-items: center; justify-content: center; width: 100%; gap: 10px;
@@ -120,6 +127,7 @@
             border-radius: 20px 0 0 20px; box-shadow: -5px 0 20px rgba(0,0,0,0.3); padding: 15px;
             display: flex; flex-direction: column; justify-content: center; 
             transition: right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 9999; box-sizing: border-box;
+            will-change: right; backface-visibility: hidden; transform: translateZ(0);
         }
         .virtual-keyboard.show { right: 0; }
         .vk-title { text-align: center; font-size: 16px; font-weight: bold; color: #7f8c8d; margin-bottom: 15px; }
@@ -132,9 +140,9 @@
         .vk-btn.action { background: #e74c3c; color: white; font-size: 18px; }
         .vk-btn.enter { grid-column: span 3; background: #27ae60; color: white; font-size: 20px; padding: 14px 0; margin-top: 5px;}
 
-        /* ✅ 底部非阻塞提示列 */
+        /* 底部非阻塞提示列 */
         .worksheet-toast {
-            position: fixed; bottom: -120px; left: 50%; transform: translateX(-50%);
+            position: fixed; bottom: -150px; left: 50%; transform: translateX(-50%);
             width: 92%; max-width: 650px;
             background: white; border-radius: 16px;
             box-shadow: 0 -8px 30px rgba(0,0,0,0.15);
@@ -207,7 +215,6 @@
                     <div class="grid-shape" id="shape-t1" style="width: 240px; height: 160px; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(4, 1fr);"></div>
                 </div>
             </div>
-            <!-- ✅ 雙行輸入區 -->
             <div class="input-group" id="t1-measure-area">
                 <div class="input-row">
                     <span>每排有</span><input type="text" readonly class="vk-input t1-input" id="t1-row" placeholder="?"><span>個方格</span>
@@ -283,7 +290,6 @@
     </div>
 </div>
 
-<!-- ✅ 底部非阻塞提示列 -->
 <div class="worksheet-toast" id="worksheet-toast">
     <div class="toast-content">
         <div class="toast-icon">✅</div>
@@ -307,6 +313,12 @@
         document.body.classList.add('kb-show'); 
         document.querySelectorAll('.vk-input').forEach(i => i.classList.remove('active'));
         el.classList.add('active');
+        
+        setTimeout(() => {
+            el.scrollIntoView({ block: 'center', behavior: 'auto' });
+        }, 150);
+        
+        document.querySelector('.stage').style.filter = 'brightness(0.96)';
     }
     function closeKb(e) {
         if(e) e.preventDefault();
@@ -314,6 +326,7 @@
         document.body.classList.remove('kb-show'); 
         if(activeInp) activeInp.classList.remove('active');
         activeInp = null;
+        document.querySelector('.stage').style.filter = 'brightness(1)';
     }
     function kbType(val, e) {
         if(e) e.preventDefault(); if(!activeInp) return;
@@ -325,7 +338,24 @@
     document.body.addEventListener('pointerdown', e => {
         if(!e.target.closest('.virtual-keyboard') && !e.target.closest('.vk-input') && !e.target.closest('.tool-btn') && !e.target.closest('.step-btn') && !e.target.closest('.toast-btn') && !e.target.closest('.toast-check')) closeKb();
     });
-    document.querySelectorAll('.vk-input').forEach(inp => inp.onpointerdown = e => { e.preventDefault(); e.stopPropagation(); openKb(inp); });
+    document.querySelectorAll('.vk-input').forEach(inp => {
+        inp.onpointerdown = e => { e.preventDefault(); e.stopPropagation(); openKb(inp); };
+        inp.addEventListener('focus', () => {
+            setTimeout(() => {
+                inp.scrollIntoView({ block: 'center', behavior: 'auto' });
+            }, 150);
+            document.querySelector('.stage').style.filter = 'brightness(0.96)';
+        });
+        inp.addEventListener('blur', () => {
+            document.querySelector('.stage').style.filter = 'brightness(1)';
+        });
+    });
+
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => {
+            document.body.style.height = window.visualViewport.height + 'px';
+        });
+    }
 
     let previousShapes =[];
     function saveToHistory(w, h, t) {
@@ -423,7 +453,6 @@
     }
     document.querySelectorAll('.t2-input').forEach(i=>i.addEventListener('input',checkTask2));
 
-    // ✅ 提示列控制邏輯
     function showToast() {
         document.getElementById('stage-t1').classList.add('dimmed');
         document.getElementById('stage-t2').classList.add('dimmed');
