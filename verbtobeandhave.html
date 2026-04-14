@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>奇幻森林：Be vs Have 大冒險</title>
+    <title>Verb to be & have Adventure</title>
     <style>
         :root {
             --forest-green: #2ecc71;
@@ -14,35 +14,51 @@
 
         body {
             font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
-            background-color: #eef9bf;
+            background-color: #eef9bf; /* 回歸原本清爽的背景色 */
             display: flex;
             justify-content: center;
-            align-items: center;
-            height: 100vh;
+            align-items: flex-start;
+            min-height: 100vh;
             margin: 0;
-            overflow: hidden;
+            padding-top: 50px;
         }
 
         #game-container {
-            width: 90%;
-            max-width: 600px;
+            width: 95%;
+            max-width: 650px;
             background: white;
-            padding: 30px;
-            border-radius: 30px;
+            padding: 50px 30px 40px;
+            border-radius: 40px;
             box-shadow: 0 15px 0 #aad450;
             text-align: center;
             position: relative;
-            border: 8px solid var(--forest-green);
+            border: 10px solid var(--forest-green);
+            margin-bottom: 50px;
         }
 
-        h1 { color: #27ae60; font-size: 2rem; margin-bottom: 10px; }
+        /* 再次向上移，確保在所有內容之上 */
+        #feedback {
+            position: absolute;
+            top: 10px; 
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 34px;
+            font-weight: bold;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 100;
+            width: 100%;
+        }
+
+        h1 { color: #27ae60; font-size: 2.2rem; margin: 10px 0; }
         
         #progress-bar {
             width: 100%;
-            height: 20px;
+            height: 22px;
             background: #eee;
-            border-radius: 10px;
-            margin-bottom: 20px;
+            border-radius: 11px;
+            margin-bottom: 30px;
             overflow: hidden;
         }
 
@@ -53,42 +69,42 @@
             transition: width 0.3s;
         }
 
+        /* 保持大字體題目 */
         #question-box {
-            font-size: 24px;
-            margin-bottom: 30px;
-            padding: 20px;
-            background: #f9f9f9;
-            border-radius: 15px;
-            min-height: 80px;
+            font-size: 34px; 
+            font-weight: bold;
+            margin-bottom: 40px;
+            padding: 25px;
+            background: #fdfdfd;
+            border: 3px dashed #ddd;
+            border-radius: 20px;
+            min-height: 110px;
             display: flex;
             align-items: center;
             justify-content: center;
+            color: #333;
         }
 
         .options {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 25px;
         }
 
         .btn {
-            padding: 20px;
-            font-size: 22px;
+            padding: 25px;
+            font-size: 28px;
             cursor: pointer;
             border: none;
-            border-radius: 20px;
+            border-radius: 25px;
             background: var(--sky-blue);
             color: white;
             box-shadow: 0 8px 0 #2980b9;
             transition: transform 0.1s, box-shadow 0.1s;
         }
 
-        .btn:active {
-            transform: translateY(4px);
-            box-shadow: 0 4px 0 #2980b9;
-        }
+        .btn:active { transform: translateY(4px); box-shadow: 0 4px 0 #2980b9; }
 
-        /* 抖動動畫 */
         @keyframes shake {
             0% { transform: translateX(0); }
             25% { transform: translateX(-10px); }
@@ -100,23 +116,28 @@
         .shake { animation: shake 0.4s ease-in-out; }
         .btn.wrong { background-color: var(--apple-red); box-shadow: 0 8px 0 #c0392b; }
 
-        #feedback {
-            position: absolute;
-            top: -50px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 36px;
-            font-weight: bold;
-            pointer-events: none;
-            opacity: 0;
-            transition: 0.5s;
-            white-space: nowrap;
-            z-index: 10;
+        #review-list {
+            text-align: left;
+            margin-top: 25px;
+            background: #f0fdf4;
+            padding: 20px;
+            border-radius: 20px;
+            border: 2px solid var(--forest-green);
+            max-height: 450px;
+            overflow-y: auto;
         }
 
-        .animal-icon { font-size: 50px; margin-bottom: 10px; }
+        .review-item {
+            font-size: 20px;
+            margin-bottom: 12px;
+            color: #2d3436;
+            border-bottom: 1px solid #dcdde1;
+            padding-bottom: 8px;
+        }
+
+        .animal-icon { font-size: 70px; margin-bottom: 10px; }
         #result-screen { display: none; }
-        .restart-btn { margin-top: 20px; background: var(--sun-yellow); color: #333; box-shadow: 0 8px 0 #d4ac0d; }
+        .restart-btn { margin-top: 25px; background: var(--sun-yellow); color: #333; box-shadow: 0 8px 0 #d4ac0d; }
     </style>
 </head>
 <body>
@@ -125,8 +146,8 @@
     <div id="feedback">🌟 Well done!</div>
     
     <div id="quiz-screen">
-        <div class="animal-icon">🦊</div>
-        <h1>English Quiz</h1>
+        <div class="animal-icon">🦄</div>
+        <h1>Verb to be & have Adventure</h1>
         <div id="progress-bar"><div id="progress-fill"></div></div>
         
         <div id="question-box">
@@ -140,30 +161,33 @@
     </div>
 
     <div id="result-screen">
-        <div class="animal-icon">🎉</div>
-        <h1>Congratulations!</h1>
-        <p style="font-size: 24px;">You finished all 15 questions!</p>
+        <div class="animal-icon">🌈✨</div>
+        <h1>Mission Accomplished!</h1>
+        <p style="font-size: 26px; color: #27ae60; font-weight: bold;">Reading Practice:</p>
+        
+        <div id="review-list"></div>
+
         <button class="btn restart-btn" onclick="resetGame()">Play Again 🔄</button>
     </div>
 </div>
 
 <script>
     const questions = [
-        { q: "I ____ a pencil. ✏️", options: ["have", "am"], correct: 0 },
-        { q: "You ____ in P1C. 🏫", options: ["is", "are"], correct: 1 },
-        { q: "They ____ three apples. 🍎", options: ["have", "are"], correct: 0 },
-        { q: "Your father ____ a doctor. 👨‍⚕️", options: ["has", "is"], correct: 1 },
-        { q: "She ____ my teacher. 👩‍🏫", options: ["is", "has"], correct: 0 },
-        { q: "My mum ____ tall. 👩‍🦰", options: ["is", "has"], correct: 0 },
-        { q: "Tom and Jerry ____ eight years old. 👦👦", options: ["are", "have"], correct: 0 },
-        { q: "I ____ a good boy. 👦", options: ["am", "have"], correct: 0 },
-        { q: "John ____ a dog. 🐶", options: ["is", "has"], correct: 1 },
-        { q: "Macy ____ my grandmother. 👵", options: ["is", "has"], correct: 0 },
-        { q: "We ____ angry. 😡", options: ["have", "are"], correct: 1 },
-        { q: "They ____ classmates. 🤝", options: ["are", "have"], correct: 0 },
-        { q: "This ____ a watermelon. 🍉", options: ["is", "has"], correct: 0 },
-        { q: "Sally ____ some toys. 🧸", options: ["is", "has"], correct: 1 },
-        { q: "My parents ____ a big house. 🏠", options: ["are", "have"], correct: 1 }
+        { q: "I ____ a pencil. ✏️", options: ["have", "am"], correct: 0, full: "I have a pencil." },
+        { q: "You ____ in P1C. 🏫", options: ["is", "are"], correct: 1, full: "You are in P1C." },
+        { q: "They ____ three apples. 🍎", options: ["have", "are"], correct: 0, full: "They have three apples." },
+        { q: "Your father ____ a doctor. 👨‍⚕️", options: ["has", "is"], correct: 1, full: "Your father is a doctor." },
+        { q: "She ____ my teacher. 👩‍🏫", options: ["is", "has"], correct: 0, full: "She is my teacher." },
+        { q: "My mum ____ tall. 👩‍🦰", options: ["is", "has"], correct: 0, full: "My mum is tall." },
+        { q: "Tom and Jerry ____ eight years old. 👦👦", options: ["are", "have"], correct: 0, full: "Tom and Jerry are eight years old." },
+        { q: "I ____ a good boy. 👦", options: ["am", "have"], correct: 0, full: "I am a good boy." },
+        { q: "John ____ a dog. 🐶", options: ["is", "has"], correct: 1, full: "John has a dog." },
+        { q: "Macy ____ my grandmother. 👵", options: ["is", "has"], correct: 0, full: "Macy is my grandmother." },
+        { q: "We ____ angry. 😡", options: ["have", "are"], correct: 1, full: "We are angry." },
+        { q: "They ____ classmates. 🤝", options: ["are", "have"], correct: 0, full: "They are classmates." },
+        { q: "This ____ a watermelon. 🍉", options: ["is", "has"], correct: 0, full: "This is a watermelon." },
+        { q: "Sally ____ some toys. 🧸", options: ["is", "has"], correct: 1, full: "Sally has some toys." },
+        { q: "My parents ____ a big house. 🏠", options: ["are", "have"], correct: 1, full: "My parents have a big house." }
     ];
 
     let currentIdx = 0;
@@ -190,7 +214,6 @@
         if (selectedIdx === correctIdx) {
             showFeedback("🌟 Well done!", true);
             currentIdx++;
-            // 停頓一下讓學生看回饋再換題
             setTimeout(loadQuestion, 800);
         } else {
             showFeedback("☁️ Try again", false);
@@ -205,11 +228,11 @@
         feedback.innerText = text;
         feedback.style.color = isCorrect ? "#27ae60" : "#e74c3c";
         feedback.style.opacity = "1";
-        feedback.style.top = "20px";
+        feedback.style.transform = "translateX(-50%) translateY(10px)";
         
         setTimeout(() => {
             feedback.style.opacity = "0";
-            feedback.style.top = "-50px";
+            feedback.style.transform = "translateX(-50%) translateY(0px)";
         }, 700);
     }
 
@@ -217,6 +240,15 @@
         document.getElementById('quiz-screen').style.display = 'none';
         document.getElementById('result-screen').style.display = 'block';
         document.getElementById('progress-fill').style.width = "100%";
+
+        const reviewList = document.getElementById('review-list');
+        reviewList.innerHTML = ""; 
+        questions.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = "review-item";
+            div.innerHTML = `<strong>${index + 1}.</strong> ${item.full}`;
+            reviewList.appendChild(div);
+        });
     }
 
     function resetGame() {
