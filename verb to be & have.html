@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>奇幻森林：Be vs Have 大冒險</title>
+    <style>
+        :root {
+            --forest-green: #2ecc71;
+            --sky-blue: #3498db;
+            --apple-red: #e74c3c;
+            --sun-yellow: #f1c40f;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background-color: #eef9bf;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #game-container {
+            width: 90%;
+            max-width: 600px;
+            background: white;
+            padding: 30px;
+            border-radius: 30px;
+            box-shadow: 0 15px 0 #aad450;
+            text-align: center;
+            position: relative;
+            border: 8px solid var(--forest-green);
+        }
+
+        h1 { color: #27ae60; font-size: 2rem; margin-bottom: 10px; }
+        
+        #progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #eee;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            width: 0%;
+            height: 100%;
+            background: var(--sun-yellow);
+            transition: width 0.3s;
+        }
+
+        #question-box {
+            font-size: 24px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 15px;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .btn {
+            padding: 20px;
+            font-size: 22px;
+            cursor: pointer;
+            border: none;
+            border-radius: 20px;
+            background: var(--sky-blue);
+            color: white;
+            box-shadow: 0 8px 0 #2980b9;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        .btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 4px 0 #2980b9;
+        }
+
+        /* 抖動動畫 */
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
+            100% { transform: translateX(0); }
+        }
+
+        .shake { animation: shake 0.4s ease-in-out; }
+        .btn.wrong { background-color: var(--apple-red); box-shadow: 0 8px 0 #c0392b; }
+
+        #feedback {
+            position: absolute;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 36px;
+            font-weight: bold;
+            pointer-events: none;
+            opacity: 0;
+            transition: 0.5s;
+            white-space: nowrap;
+            z-index: 10;
+        }
+
+        .animal-icon { font-size: 50px; margin-bottom: 10px; }
+        #result-screen { display: none; }
+        .restart-btn { margin-top: 20px; background: var(--sun-yellow); color: #333; box-shadow: 0 8px 0 #d4ac0d; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="feedback">🌟 Well done!</div>
+    
+    <div id="quiz-screen">
+        <div class="animal-icon">🦊</div>
+        <h1>English Quiz</h1>
+        <div id="progress-bar"><div id="progress-fill"></div></div>
+        
+        <div id="question-box">
+            <span id="question-text">Loading...</span>
+        </div>
+
+        <div class="options">
+            <button class="btn" onclick="checkAnswer(0)" id="opt0">Option A</button>
+            <button class="btn" onclick="checkAnswer(1)" id="opt1">Option B</button>
+        </div>
+    </div>
+
+    <div id="result-screen">
+        <div class="animal-icon">🎉</div>
+        <h1>Congratulations!</h1>
+        <p style="font-size: 24px;">You finished all 15 questions!</p>
+        <button class="btn restart-btn" onclick="resetGame()">Play Again 🔄</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        { q: "I ____ a pencil. ✏️", options: ["have", "am"], correct: 0 },
+        { q: "You ____ in P1C. 🏫", options: ["is", "are"], correct: 1 },
+        { q: "They ____ three apples. 🍎", options: ["have", "are"], correct: 0 },
+        { q: "Your father ____ a doctor. 👨‍⚕️", options: ["has", "is"], correct: 1 },
+        { q: "She ____ my teacher. 👩‍🏫", options: ["is", "has"], correct: 0 },
+        { q: "My mum ____ tall. 👩‍🦰", options: ["is", "has"], correct: 0 },
+        { q: "Tom and Jerry ____ eight years old. 👦👦", options: ["are", "have"], correct: 0 },
+        { q: "I ____ a good boy. 👦", options: ["am", "have"], correct: 0 },
+        { q: "John ____ a dog. 🐶", options: ["is", "has"], correct: 1 },
+        { q: "Macy ____ my grandmother. 👵", options: ["is", "has"], correct: 0 },
+        { q: "We ____ angry. 😡", options: ["have", "are"], correct: 1 },
+        { q: "They ____ classmates. 🤝", options: ["are", "have"], correct: 0 },
+        { q: "This ____ a watermelon. 🍉", options: ["is", "has"], correct: 0 },
+        { q: "Sally ____ some toys. 🧸", options: ["is", "has"], correct: 1 },
+        { q: "My parents ____ a big house. 🏠", options: ["are", "have"], correct: 1 }
+    ];
+
+    let currentIdx = 0;
+    const feedback = document.getElementById('feedback');
+
+    function loadQuestion() {
+        if (currentIdx >= questions.length) {
+            showResult();
+            return;
+        }
+        const q = questions[currentIdx];
+        document.getElementById('question-text').innerText = q.q;
+        document.getElementById('opt0').innerText = q.options[0];
+        document.getElementById('opt1').innerText = q.options[1];
+        
+        const progress = (currentIdx / questions.length) * 100;
+        document.getElementById('progress-fill').style.width = progress + "%";
+    }
+
+    function checkAnswer(selectedIdx) {
+        const correctIdx = questions[currentIdx].correct;
+        const btn = document.getElementById('opt' + selectedIdx);
+
+        if (selectedIdx === correctIdx) {
+            showFeedback("🌟 Well done!", true);
+            currentIdx++;
+            // 停頓一下讓學生看回饋再換題
+            setTimeout(loadQuestion, 800);
+        } else {
+            showFeedback("☁️ Try again", false);
+            btn.classList.add('wrong', 'shake');
+            setTimeout(() => {
+                btn.classList.remove('wrong', 'shake');
+            }, 500);
+        }
+    }
+
+    function showFeedback(text, isCorrect) {
+        feedback.innerText = text;
+        feedback.style.color = isCorrect ? "#27ae60" : "#e74c3c";
+        feedback.style.opacity = "1";
+        feedback.style.top = "20px";
+        
+        setTimeout(() => {
+            feedback.style.opacity = "0";
+            feedback.style.top = "-50px";
+        }, 700);
+    }
+
+    function showResult() {
+        document.getElementById('quiz-screen').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+        document.getElementById('progress-fill').style.width = "100%";
+    }
+
+    function resetGame() {
+        currentIdx = 0;
+        document.getElementById('quiz-screen').style.display = 'block';
+        document.getElementById('result-screen').style.display = 'none';
+        loadQuestion();
+    }
+
+    loadQuestion();
+</script>
+
+</body>
+</html>
