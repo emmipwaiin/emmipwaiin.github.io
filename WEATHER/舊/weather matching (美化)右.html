@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Macau's Four Seasons Weather Game</title>
+    <!-- 引入適合兒童的圓潤字體 -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f0faff;
+            --spring: #78e08f;
+            --summer: #ffbe76;
+            --autumn: #ff7979;
+            --winter: #74b9ff;
+            --text-dark: #2f3542;
+            --accent: #f9ca24;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Fredoka', 'Segoe UI', sans-serif;
+            background: var(--bg-color);
+            background-image: radial-gradient(#d1eeff 2px, transparent 2px);
+            background-size: 40px 40px;
+            height: 100vh; /* 鎖定全螢幕高度 */
+            display: flex;
+            flex-direction: column;
+            padding: 10px 15px;
+            overflow: hidden; /* 防止滾動條出現 */
+            color: var(--text-dark);
+        }
+        
+        h1 {
+            font-size: 1.8rem; /* 稍微縮小標題 */
+            color: #0984e3;
+            text-shadow: 2px 2px 0px #fff;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            color: #57606f;
+            text-align: center;
+            background: #fff;
+            padding: 3px 15px;
+            border-radius: 50px;
+            box-shadow: 0 3px 0px rgba(0,0,0,0.1);
+            width: fit-content;
+            margin: 0 auto 10px auto;
+        }
+        
+        /* 詞庫區域 */
+        #word-bank {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 5px 0px #dfe6e9;
+            border: 3px solid #fff;
+            margin-bottom: 15px;
+            flex-shrink: 0; /* 保持尺寸，不被壓縮 */
+        }
+        
+        .word-card {
+            background: #fff;
+            border: 3px solid #ced6e0;
+            border-radius: 15px;
+            padding: 8px;
+            width: 100px; /* 卡片寬度微調 */
+            cursor: grab;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 0px #ced6e0;
+        }
+        
+        .word-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent);
+            box-shadow: 0 6px 0px var(--accent);
+        }
+        
+        .word-card img { 
+            width: 40px; /* 圖片微縮 */
+            height: 40px; 
+            object-fit: contain;
+        }
+        
+        .word-card span.word-text {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #2f3542;
+        }
+        
+        .speaker {
+            font-size: 1rem;
+            background: #f1f2f6;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        
+        .speaker:hover { background: var(--accent); transform: scale(1.1); }
+        
+        /* 季節容器：改為橫向排列 4 格 */
+        #seasons-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            flex: 1; /* 自動伸展填滿剩餘的垂直空間 */
+            min-height: 0; /* 讓容器可以按比例縮小，防止撐開頁面 */
+        }
+        
+        .season-box {
+            background: #fff;
+            border-radius: 20px;
+            padding: 15px;
+            border: 4px dashed #dfe6e9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%; /* 填滿 flex 容器 */
+        }
+        
+        .season-box h3 {
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+            padding: 3px 15px;
+            border-radius: 12px;
+            background: #f8f9fa;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .season-box.drag-over {
+            background: #f1f2f6;
+            transform: scale(1.02);
+            border-color: #74b9ff;
+        }
+        
+        .season-box .drop-zone {
+            flex: 1;
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0,0,0,0.02);
+            border-radius: 12px;
+            padding: 5px;
+        }
+
+        /* 放在格子裡的卡片尺寸 */
+        .drop-zone .word-card {
+            width: 90px;
+            box-shadow: 0 3px 0px #ced6e0;
+            cursor: default;
+        }
+        
+        /* 提示語 */
+        #feedback {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff4757;
+            color: white;
+            padding: 10px 30px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 5px 0px #c0392b;
+            animation: bounceIn 0.5s;
+        }
+        
+        @keyframes bounceIn {
+            0% { transform: translateX(-50%) scale(0.3); opacity: 0; }
+            50% { transform: translateX(-50%) scale(1.05); }
+            100% { transform: translateX(-50%) scale(1); opacity: 1; }
+        }
+        
+        /* 全螢幕彈窗 */
+        #success-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: #fff;
+            z-index: 2000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-y: auto; /* 若螢幕太小彈窗可滾動 */
+        }
+        
+        .modal-content {
+            max-width: 1000px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .modal-content h2 {
+            color: #2ecc71;
+            font-size: 3.5rem;
+            margin-bottom: 25px;
+        }
+        
+        .reading-text {
+            background: #f1f2f6;
+            padding: 30px;
+            border-radius: 30px;
+            font-size: 2rem;
+            line-height: 1.8;
+            color: #2f3542;
+            margin-bottom: 30px;
+            border: 6px solid #fff;
+            box-shadow: 0 10px 0px #dfe6e9;
+        }
+        
+        .reading-text .highlight {
+            color: #ff4757;
+            text-decoration: underline;
+            font-weight: 700;
+        }
+        
+        #play-again {
+            background: #2ecc71;
+            color: white;
+            border: none;
+            padding: 20px 60px;
+            font-size: 1.8rem;
+            font-family: 'Fredoka', sans-serif;
+            font-weight: 700;
+            border-radius: 100px;
+            cursor: pointer;
+            box-shadow: 0 8px 0px #27ae60;
+            transition: 0.2s;
+        }
+        
+        #play-again:hover {
+            transform: translateY(3px);
+            box-shadow: 0 5px 0px #27ae60;
+        }
+
+        /* 針對小螢幕與手機的自適應適配 */
+        @media (max-width: 600px) {
+            body { overflow: auto; height: auto; } /* 小手機允許滾動以免疊加 */
+            #seasons-container { 
+                grid-template-columns: repeat(2, 1fr); 
+                grid-template-rows: repeat(2, 1fr);
+                flex: none;
+                height: 450px;
+            }
+            .modal-content h2 { font-size: 2rem; }
+            .reading-text { font-size: 1.2rem; padding: 15px; }
+            #play-again { font-size: 1.2rem; padding: 15px 40px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="feedback">Oops! Try again! 🌟</div>
+
+    <h1> Macau's Four Seasons Weather </h1>
+    <p class="subtitle">Drag the words to the correct seasons! 🎯</p>
+
+    <!-- 詞庫 -->
+    <div id="word-bank">
+        <div class="word-card" draggable="true" data-word="cloudy">
+            <img src="https://cdn-icons-png.flaticon.com/512/1146/1146869.png" alt="cloudy">
+            <span class="word-text">cloudy</span>
+            <span class="speaker" onclick="playAudio('cloudy')">🔊</span>
+        </div>
+        <div class="word-card" draggable="true" data-word="rainy">
+            <img src="https://cdn-icons-png.flaticon.com/512/1163/1163657.png" alt="rainy">
+            <span class="word-text">rainy</span>
+            <span class="speaker" onclick="playAudio('rainy')">🔊</span>
+        </div>
+        <div class="word-card" draggable="true" data-word="snowy">
+            <img src="https://cdn-icons-png.flaticon.com/512/2315/2315309.png" alt="snowy">
+            <span class="word-text">snowy</span>
+            <span class="speaker" onclick="playAudio('snowy')">🔊</span>
+        </div>
+        <div class="word-card" draggable="true" data-word="sunny">
+            <img src="sunny.png" alt="sunny">
+            <span class="word-text">sunny</span>
+            <span class="speaker" onclick="playAudio('sunny')">🔊</span>
+        </div>
+        <div class="word-card" draggable="true" data-word="windy">
+            <img src="windy.png" alt="windy">
+            <span class="word-text">windy</span>
+            <span class="speaker" onclick="playAudio('windy')">🔊</span>
+        </div>
+        <div class="word-card" draggable="true" data-word="hot">
+            <img src="https://cdn-icons-png.flaticon.com/512/1684/1684375.png" alt="hot">
+            <span class="word-text">hot</span>
+            <span class="speaker" onclick="playAudio('hot')">🔊</span>
+        </div>
+        <div class="word-card" draggable="true" data-word="wet">
+            <img src="wet.png" alt="wet">
+            <span class="word-text">wet</span>
+            <span class="speaker" onclick="playAudio('wet')">🔊</span>
+        </div>
+        <div class="word-card" draggable="true" data-word="cool">
+            <img src="cool.png" alt="cool">
+            <span class="word-text">cool</span>
+            <span class="speaker" onclick="playAudio('cool')">🔊</span>
+        </div>
+        <div class="word-card" draggable="true" data-word="cold">
+            <img src="cold.png" alt="cold">
+            <span class="word-text">cold</span>
+            <span class="speaker" onclick="playAudio('cold')">🔊</span>
+        </div>
+        <div class="word-card" draggable="true" data-word="warm">
+            <img src="warm.png" alt="warm">
+            <span class="word-text">warm</span>
+            <span class="speaker" onclick="playAudio('warm')">🔊</span>
+        </div>
+        <div class="word-card" draggable="true" data-word="dry">
+            <img src="dry.png" alt="dry">
+            <span class="word-text">dry</span>
+            <span class="speaker" onclick="playAudio('dry')">🔊</span>
+        </div>
+    </div>
+
+    <!-- 季節區域：橫向排列 -->
+    <div id="seasons-container">
+        <div class="season-box" data-season="Spring" style="border-color: var(--spring);">
+            <h3 style="color: var(--spring);">🌸 Spring</h3>
+            <div class="drop-zone"></div>
+        </div>
+        <div class="season-box" data-season="Summer" style="border-color: var(--summer);">
+            <h3 style="color: var(--summer);">☀️ Summer</h3>
+            <div class="drop-zone"></div>
+        </div>
+        <div class="season-box" data-season="Autumn" style="border-color: var(--autumn);">
+            <h3 style="color: var(--autumn);">🍂 Autumn</h3>
+            <div class="drop-zone"></div>
+        </div>
+        <div class="season-box" data-season="Winter" style="border-color: var(--winter);">
+            <h3 style="color: var(--winter);">❄️ Winter</h3>
+            <div class="drop-zone"></div>
+        </div>
+    </div>
+
+    <!-- 全螢幕彈窗 -->
+    <div id="success-modal">
+        <div class="modal-content">
+            <h2>🎉 Excellent! 🎉</h2>
+            <div class="reading-text">
+                In Macau, it is <span class="highlight">warm</span> and <span class="highlight">wet</span> in spring.<br>
+                In Macau, it is <span class="highlight">hot</span> and <span class="highlight">rainy</span> in summer.<br>
+                In Macau, it is <span class="highlight">windy</span> and <span class="highlight">cool</span> in autumn.<br>
+                In Macau, it is <span class="highlight">cold</span> and <span class="highlight">dry</span> in winter.
+            </div>
+            <button id="play-again">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        function playAudio(word) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(word);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.8;
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        const draggables = document.querySelectorAll('.word-card');
+        const dropZones = document.querySelectorAll('.drop-zone');
+        const feedback = document.getElementById('feedback');
+        const successModal = document.getElementById('success-modal');
+
+        const correctMatches = {
+            'Spring': ['warm', 'wet'],
+            'Summer': ['hot', 'rainy'],
+            'Autumn': ['windy', 'cool'],
+            'Winter': ['cold', 'dry']
+        };
+
+        draggables.forEach(card => {
+            card.addEventListener('dragstart', e => {
+                e.dataTransfer.setData('text/plain', card.dataset.word);
+            });
+        });
+
+        dropZones.forEach(zone => {
+            zone.addEventListener('dragover', e => {
+                e.preventDefault();
+                zone.parentElement.classList.add('drag-over');
+            });
+            zone.addEventListener('dragleave', () => {
+                zone.parentElement.classList.remove('drag-over');
+            });
+            zone.addEventListener('drop', e => {
+                e.preventDefault();
+                zone.parentElement.classList.remove('drag-over');
+                const word = e.dataTransfer.getData('text/plain');
+                const season = zone.parentElement.dataset.season;
+                checkMatch(word, season, zone);
+            });
+        });
+
+        function checkMatch(word, season, zone) {
+            if (zone.querySelector(`[data-word="${word}"]`)) return;
+
+            const card = document.querySelector(`[data-word="${word}"]`);
+            const expected = correctMatches[season] || [];
+
+            if (expected.includes(word)) {
+                const clone = card.cloneNode(true);
+                clone.draggable = false;
+                zone.appendChild(clone);
+                card.style.visibility = 'hidden';
+                card.style.pointerEvents = 'none';
+                checkWin();
+            } else {
+                feedback.style.display = 'block';
+                setTimeout(() => feedback.style.display = 'none', 2000);
+            }
+        }
+
+        function checkWin() {
+            const totalPlaced = document.querySelectorAll('.drop-zone .word-card').length;
+            if (totalPlaced === 8) {
+                setTimeout(() => {
+                    successModal.style.display = 'flex';
+                }, 500);
+            }
+        }
+
+        document.getElementById('play-again').addEventListener('click', () => {
+            successModal.style.display = 'none';
+            document.querySelectorAll('.word-card').forEach(c => {
+                c.style.visibility = 'visible';
+                c.style.pointerEvents = 'auto';
+            });
+            document.querySelectorAll('.drop-zone').forEach(z => z.innerHTML = '');
+        });
+    </script>
+</body>
+</html>

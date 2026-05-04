@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Macau's Four Seasons Weather Game</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap');
+        
+        :root {
+            --bg-gradient: linear-gradient(135deg, #ffecd2 0%, #fcb69f 50%, #a8edea 100%);
+            --card-bg: #ffffff;
+            --spring: #8bc34a;
+            --summer: #ff9800;
+            --autumn: #e67e22;
+            --winter: #3498db;
+            --text: #2c3e50;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Nunito', 'Segoe UI', Tahoma, sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            font-size: 2.2rem;
+            margin: 10px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .subtitle {
+            text-align: center;
+            font-size: 1.3rem;
+            color: #555;
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+        
+        #word-bank {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 18px;
+            padding: 25px;
+            background: rgba(255,255,255,0.85);
+            border-radius: 25px;
+            min-height: 140px;
+            margin-bottom: 35px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            border: 3px solid rgba(255,255,255,0.9);
+        }
+        
+        .word-card {
+            background: var(--card-bg);
+            border: 3px solid #e0e0e0;
+            border-radius: 20px;
+            padding: 12px 18px;
+            width: 120px;
+            cursor: grab;
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.12);
+            transition: all 0.3s ease;
+        }
+        
+        .word-card:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            border-color: #ffd700;
+        }
+        
+        .word-card:active { cursor: grabbing; transform: scale(1.1); }
+        
+        .word-card img { 
+            width: 55px; 
+            height: 55px; 
+            object-fit: contain;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 5px;
+        }
+        
+        .word-card span.word-text {
+            font-weight: 800;
+            font-size: 1rem;
+            color: #333;
+        }
+        
+        .speaker {
+            cursor: pointer;
+            font-size: 1.4rem;
+            transition: transform 0.2s;
+            background: #f0f0f0;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .speaker:hover { transform: scale(1.3); background: #ffd700; }
+        
+        #seasons-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .season-box {
+            background: #fff;
+            border-radius: 25px;
+            padding: 20px;
+            min-height: 200px;
+            border: 4px dashed #ccc;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+        
+        .season-box h3 {
+            margin: 0 0 15px;
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+        
+        .season-box.drag-over {
+            background: #fff3cd;
+            border-color: #ffc107;
+            transform: scale(1.02);
+        }
+        
+        .season-box .drop-zone {
+            flex: 1;
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .drop-zone .word-card {
+            border-width: 2px;
+            width: 100px;
+            cursor: default;
+        }
+        
+        .drop-zone .word-card:hover {
+            transform: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.12);
+        }
+        
+        #feedback {
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 18px 35px;
+            border-radius: 50px;
+            font-size: 1.4rem;
+            font-weight: 800;
+            display: none;
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(255,107,107,0.4);
+            animation: bounce 0.5s ease;
+        }
+        
+        @keyframes bounce {
+            0% { transform: translateX(-50%) scale(0.3); opacity: 0; }
+            50% { transform: translateX(-50%) scale(1.1); }
+            100% { transform: translateX(-50%) scale(1); opacity: 1; }
+        }
+        
+        /* 全屏弹出框样式 */
+        #success-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            z-index: 200;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            padding: 20px;
+        }
+        
+        .modal-content {
+            background: #ffffff;
+            padding: 60px 80px;
+            border-radius: 40px;
+            max-width: 900px;
+            width: 95%;
+            max-height: 90vh;
+            overflow-y: auto;
+            text-align: center;
+            box-shadow: 0 30px 90px rgba(0,0,0,0.4);
+            animation: popIn 0.6s ease;
+        }
+        
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .modal-content h2 {
+            color: #2ecc71;
+            font-size: 3.5rem;
+            margin-bottom: 50px;
+            font-weight: 800;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .reading-text {
+            text-align: left;
+            line-height: 2.5;
+            margin: 40px 0;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #333;
+            background: #f8f9fa;
+            padding: 40px;
+            border-radius: 20px;
+            border-left: 8px solid #2ecc71;
+        }
+        
+        .reading-text .highlight {
+            color: #ff6b35;
+            text-decoration: underline;
+            text-decoration-color: #ff6b35;
+            text-underline-offset: 6px;
+            font-weight: 800;
+        }
+        
+        button#play-again {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+            border: none;
+            padding: 25px 60px;
+            font-size: 1.8rem;
+            font-weight: 700;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 40px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(46,204,113,0.5);
+        }
+        
+        button#play-again:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 40px rgba(46,204,113,0.7);
+        }
+        
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8rem; }
+            .subtitle { font-size: 1.1rem; }
+            #word-bank { padding: 15px; gap: 12px; }
+            .word-card { width: 100px; padding: 10px; }
+            .word-card img { width: 45px; height: 45px; }
+            #seasons-container { grid-template-columns: 1fr 1fr; gap: 15px; }
+            .season-box { min-height: 160px; padding: 15px; }
+            
+            /* 移动端弹出框调整 */
+            .modal-content {
+                padding: 40px 30px;
+                max-width: 95%;
+            }
+            .modal-content h2 { 
+                font-size: 2.5rem;
+                margin-bottom: 30px;
+            }
+            .reading-text { 
+                font-size: 1.4rem;
+                padding: 25px;
+                line-height: 2.2;
+            }
+            button#play-again {
+                padding: 20px 40px;
+                font-size: 1.4rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            #seasons-container { grid-template-columns: 1fr; }
+            .modal-content h2 { font-size: 2rem; }
+            .reading-text { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1> Macau's Four Seasons Weather </h1>
+    <p class="subtitle">Drag the words to the correct seasons! 🎯</p>
+
+    <div id="word-bank">
+        <!-- 保留原有 CDN 图片 -->
+        <div class="word-card" draggable="true" data-word="cloudy">
+            <img src="https://cdn-icons-png.flaticon.com/512/1146/1146869.png" alt="cloudy">
+            <span class="word-text">cloudy</span>
+            <span class="speaker" onclick="playAudio('cloudy')"></span>
+        </div>
+        <div class="word-card" draggable="true" data-word="rainy">
+            <img src="https://cdn-icons-png.flaticon.com/512/1163/1163657.png" alt="rainy">
+            <span class="word-text">rainy</span>
+            <span class="speaker" onclick="playAudio('rainy')">🔊</span>
+        </div>
+        <div class="word-card" draggable="true" data-word="snowy">
+            <img src="https://cdn-icons-png.flaticon.com/512/2315/2315309.png" alt="snowy">
+            <span class="word-text">snowy</span>
+            <span class="speaker" onclick="playAudio('snowy')">🔊</span>
+        </div>
+        
+        <!-- 外部图片 - 请替换 src 为您的图片 URL -->
+        <div class="word-card" draggable="true" data-word="sunny">
+            <img src="sunny.png" alt="sunny">
+            <span class="word-text">sunny</span>
+            <span class="speaker" onclick="playAudio('sunny')">🔊</span>
+        </div>
+        
+        <!-- 外部图片 - 请替换 src 为您的图片 URL -->
+        <div class="word-card" draggable="true" data-word="windy">
+            <img src="windy.png" alt="windy">
+            <span class="word-text">windy</span>
+            <span class="speaker" onclick="playAudio('windy')">🔊</span>
+        </div>
+        
+        <!-- 保留原有 CDN 图片 -->
+        <div class="word-card" draggable="true" data-word="hot">
+            <img src="https://cdn-icons-png.flaticon.com/512/1684/1684375.png" alt="hot">
+            <span class="word-text">hot</span>
+            <span class="speaker" onclick="playAudio('hot')">🔊</span>
+        </div>
+        
+        <!-- 外部图片 - 请替换 src 为您的图片 URL -->
+        <div class="word-card" draggable="true" data-word="wet">
+            <img src="wet.png" alt="wet">
+            <span class="word-text">wet</span>
+            <span class="speaker" onclick="playAudio('wet')"></span>
+        </div>
+        <div class="word-card" draggable="true" data-word="cool">
+            <img src="cool.png" alt="cool">
+            <span class="word-text">cool</span>
+            <span class="speaker" onclick="playAudio('cool')">🔊</span>
+        </div>
+        <div class="word-card" draggable="true" data-word="cold">
+            <img src="cold.png" alt="cold">
+            <span class="word-text">cold</span>
+            <span class="speaker" onclick="playAudio('cold')">🔊</span>
+        </div>
+        <div class="word-card" draggable="true" data-word="warm">
+            <img src="warm.png" alt="warm">
+            <span class="word-text">warm</span>
+            <span class="speaker" onclick="playAudio('warm')">🔊</span>
+        </div>
+        
+        <!-- 外部图片 - 请替换 src 为您的图片 URL -->
+        <div class="word-card" draggable="true" data-word="dry">
+            <img src="dry.png" alt="dry">
+            <span class="word-text">dry</span>
+            <span class="speaker" onclick="playAudio('dry')">🔊</span>
+        </div>
+    </div>
+
+    <div id="seasons-container">
+        <div class="season-box" data-season="Spring" style="border-color: var(--spring);">
+            <h3 style="color: var(--spring);">🌸 Spring</h3>
+            <div class="drop-zone"></div>
+        </div>
+        <div class="season-box" data-season="Summer" style="border-color: var(--summer);">
+            <h3 style="color: var(--summer);">☀️ Summer</h3>
+            <div class="drop-zone"></div>
+        </div>
+        <div class="season-box" data-season="Autumn" style="border-color: var(--autumn);">
+            <h3 style="color: var(--autumn);">🍂 Autumn</h3>
+            <div class="drop-zone"></div>
+        </div>
+        <div class="season-box" data-season="Winter" style="border-color: var(--winter);">
+            <h3 style="color: var(--winter);">❄️ Winter</h3>
+            <div class="drop-zone"></div>
+        </div>
+    </div>
+
+    <div id="feedback">Oops! Try again! 🌟</div>
+
+    <div id="success-modal">
+        <div class="modal-content">
+            <h2>🎉 Well Done! Let's Read! 🎉</h2>
+            <div class="reading-text">
+                In Macau, it is <span class="highlight">warm</span> and <span class="highlight">wet</span> in spring.<br>
+                In Macau, it is <span class="highlight">hot</span> and <span class="highlight">rainy</span> in summer.<br>
+                In Macau, it is <span class="highlight">windy</span> and <span class="highlight">cool</span> in autumn.<br>
+                In Macau, it is <span class="highlight">cold</span> and <span class="highlight">dry</span> in winter.
+            </div>
+            <button id="play-again">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // 🔊 語音朗讀功能
+        function playAudio(word) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(word);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.9;
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.speak(utterance);
+            } else {
+                alert('Your browser does not support text-to-speech.');
+            }
+        }
+
+        // 🖱️ 拖曳邏輯
+        const draggables = document.querySelectorAll('.word-card');
+        const dropZones = document.querySelectorAll('.drop-zone');
+        const feedback = document.getElementById('feedback');
+        const successModal = document.getElementById('success-modal');
+
+        const correctMatches = {
+            'Spring': ['warm', 'wet'],
+            'Summer': ['hot', 'rainy'],
+            'Autumn': ['windy', 'cool'],
+            'Winter': ['cold', 'dry']
+        };
+
+        draggables.forEach(card => {
+            card.addEventListener('dragstart', e => {
+                e.dataTransfer.setData('text/plain', card.dataset.word);
+                e.dataTransfer.effectAllowed = 'move';
+            });
+        });
+
+        dropZones.forEach(zone => {
+            zone.addEventListener('dragover', e => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                zone.parentElement.classList.add('drag-over');
+            });
+            zone.addEventListener('dragleave', () => {
+                zone.parentElement.classList.remove('drag-over');
+            });
+            zone.addEventListener('drop', e => {
+                e.preventDefault();
+                zone.parentElement.classList.remove('drag-over');
+                const word = e.dataTransfer.getData('text/plain');
+                const season = zone.parentElement.dataset.season;
+                checkMatch(word, season, zone);
+            });
+        });
+
+        function checkMatch(word, season, zone) {
+            if (zone.querySelector(`[data-word="${word}"]`)) return;
+
+            const card = document.querySelector(`[data-word="${word}"]`);
+            const expected = correctMatches[season] || [];
+
+            if (expected.includes(word)) {
+                const clone = card.cloneNode(true);
+                clone.draggable = false;
+                zone.appendChild(clone);
+                card.style.display = 'none';
+                checkWin();
+            } else {
+                feedback.style.display = 'block';
+                setTimeout(() => feedback.style.display = 'none', 1500);
+            }
+        }
+
+        function checkWin() {
+            const totalPlaced = document.querySelectorAll('.drop-zone .word-card').length;
+            if (totalPlaced === 8) {
+                successModal.style.display = 'flex';
+            }
+        }
+
+        document.getElementById('play-again').addEventListener('click', () => {
+            successModal.style.display = 'none';
+            document.querySelectorAll('.word-card').forEach(c => c.style.display = 'flex');
+            document.querySelectorAll('.drop-zone').forEach(z => z.innerHTML = '');
+        });
+    </script>
+</body>
+</html>
