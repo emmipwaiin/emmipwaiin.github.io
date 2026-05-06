@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>澳門四季天氣互動學習</title>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f0faff;
+            --spring: #78e08f; --summer: #ffbe76;
+            --autumn: #ff7979; --winter: #74b9ff;
+            --accent: #f9ca24; --success: #2ecc71;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: 'Noto+Sans+TC', sans-serif;
+            background: var(--bg-color);
+            height: 100vh; width: 100vw; overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; padding: 10px 25px;
+        }
+
+        h1 { font-family: 'ZCOOL+KuaiLe', cursive; font-size: 2.5rem; color: #0984e3; margin-bottom: 5px; text-shadow: 2px 2px 0px #fff; z-index: 10; }
+
+        .game-page::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: cover;
+            opacity: 0.15;
+            z-index: -1;
+        }
+
+        #page-Spring::before { background-image: url('https://images.unsplash.com/photo-1595304958809-9060010901e1?q=80&w=2070&auto=format&fit=crop'); }
+        #page-Summer::before { background-image: url('https://images.unsplash.com/photo-1540656200253-15746b8a8b13?q=80&w=1974&auto=format&fit=crop'); }
+        #page-Autumn::before { background-image: url('https://images.unsplash.com/photo-1638290234771-46808796f600?q=80&w=2070&auto=format&fit=crop'); }
+        #page-Winter::before { background-image: url('https://images.unsplash.com/photo-1605646193799-a35970176840?q=80&w=2070&auto=format&fit=crop'); }
+        #page-Review::before { background-image: url('https://images.unsplash.com/photo-1540206276207-3af25c08abb4?q=80&w=1954&auto=format&fit=crop'); }
+
+        #nav-header { width: 100%; max-width: 800px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; z-index: 10; }
+        .step-dot { width: 40px; height: 40px; background: #fff; border: 3px solid #ced6e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; transition: 0.3s; }
+        .step-dot.active { background: var(--accent); border-color: #fff; transform: scale(1.2); }
+
+        .game-page { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; animation: slideIn 0.4s ease-out; position: relative; }
+        .game-page.active { display: flex; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+
+        .word-bank {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; padding: 12px;
+            background: rgba(255, 255, 255, 0.85); border-radius: 20px;
+            width: 100%; max-width: 1000px; min-height: 140px;
+            box-shadow: 0 6px 0px #dfe6e9; border: 3px solid #fff; margin-bottom: 15px;
+        }
+
+        .word-card {
+            background: #fff; border: 3px solid #ced6e0; border-radius: 15px;
+            padding: 8px; width: 120px; height: 95px;
+            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+            box-shadow: 0 4px 0px #ced6e0; touch-action: none; cursor: grab;
+        }
+        .word-card img { width: 40px; height: 40px; pointer-events: none; }
+        .word-card span.word-text { font-weight: 700; font-size: 1.1rem; pointer-events: none; color: #2d3436; }
+        .speaker { background: #f1f2f6; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid #ccc; font-size: 0.8rem; }
+
+        .drop-container { flex: 1; width: 100%; max-width: 750px; display: flex; justify-content: center; align-items: center; margin-bottom: 90px; position: relative; }
+        .season-drop-box { width: 100%; height: 260px; background: rgba(255, 255, 255, 0.9); border-radius: 40px; border: 6px dashed #ced6e0; display: flex; flex-direction: column; align-items: center; padding: 15px; position: relative; }
+        .season-drop-box h3 { font-size: 2rem; margin-bottom: 10px; padding: 2px 25px; border-radius: 15px; }
+        .drop-zone { flex: 1; width: 100%; display: flex; gap: 20px; justify-content: center; align-items: center; background: rgba(240,248,255,0.5); border-radius: 30px; }
+
+        .check-mark { display: none; position: absolute; top: 10px; right: 20px; font-size: 3.5rem; color: var(--success); animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .next-hint { display: none; position: absolute; bottom: -45px; color: var(--success); font-weight: 800; font-size: 1.4rem; animation: blink 1s infinite; }
+        @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        .grid-container { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 15px; width: 100%; max-width: 900px; height: 60vh; margin-top: 10px; }
+        .grid-box { background: rgba(255, 255, 255, 0.9); border: 4px solid #fff; border-radius: 25px; display: flex; flex-direction: column; align-items: center; padding: 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        .grid-box h4 { font-size: 1.5rem; margin-bottom: 5px; }
+        .grid-content { display: flex; gap: 10px; justify-content: center; width: 100%; }
+
+        .nav-btn {
+            position: fixed; bottom: 25px; right: 40px; padding: 12px 45px; font-size: 1.8rem; font-weight: 700;
+            border-radius: 50px; border: none; background: #ced6e0; color: #fff; cursor: not-allowed; transition: 0.3s; z-index: 20;
+        }
+        .nav-btn.active { background: #0984e3; cursor: pointer; box-shadow: 0 6px 0px #0769b5; }
+
+        #page-Final { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; z-index: 10000; flex-direction: column; justify-content: center; align-items: center; }
+        #page-Final.active { display: flex; animation: zoomIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        @keyframes zoomIn { from { transform: scale(0.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .final-card {
+            width: 90%; max-width: 950px; background: linear-gradient(135deg, #fff 0%, #f0faff 100%);
+            border: 12px solid #2ecc71; border-radius: 50px; padding: 40px; text-align: center;
+            box-shadow: 0 0 50px rgba(46,204,113,0.3);
+        }
+        .final-card h2 { color: #2ecc71; font-size: 3.8rem; margin-bottom: 20px; animation: pulse 2s infinite; }
+        .final-text { font-size: 2.2rem; line-height: 2; font-weight: 700; color: #2c3e50; text-align: left; display: inline-block; }
+        .final-text span { color: #ff4757; border-bottom: 4px solid #ff4757; margin: 0 5px; }
+
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+
+        #feedback { position: fixed; top: 20px; background: #ff4757; color: white; padding: 10px 40px; border-radius: 50px; font-size: 1.5rem; display: none; z-index: 20000; font-weight: bold; }
+        .drag-over { background: #f1f2f6 !important; border-color: #74b9ff !important; }
+    </style>
+</head>
+<body>
+
+    <div id="feedback">哎呀！再試一次看看！ 🌟</div>
+    <h1>澳門四季天氣</h1>
+
+    <div id="nav-header">
+        <div class="step-dot active" id="dot-Spring">春</div>
+        <div class="step-dot" id="dot-Summer">夏</div>
+        <div class="step-dot" id="dot-Autumn">秋</div>
+        <div class="step-dot" id="dot-Winter">冬</div>
+        <div class="step-dot" id="dot-Review">總</div>
+    </div>
+
+    <div class="game-page active" id="page-Spring">
+        <div class="word-bank" id="bank-Spring"></div>
+        <div class="drop-container">
+            <div class="season-drop-box" id="box-Spring" style="border-color: var(--spring);">
+                <span class="check-mark">✅</span>
+                <h3 style="color: var(--spring);">🌸 春季</h3>
+                <div class="drop-zone" data-season="Spring"></div>
+                <div class="next-hint">太棒了！按「下一步」➔</div>
+            </div>
+        </div>
+        <button class="nav-btn" id="btn-Spring" onclick="goToPage('Summer')">下一步 ➔</button>
+    </div>
+
+    <div class="game-page" id="page-Summer">
+        <div class="word-bank" id="bank-Summer"></div>
+        <div class="drop-container">
+            <div class="season-drop-box" id="box-Summer" style="border-color: var(--summer);">
+                <span class="check-mark">✅</span>
+                <h3 style="color: var(--summer);">☀️ 夏季</h3>
+                <div class="drop-zone" data-season="Summer"></div>
+                <div class="next-hint">太棒了！按「下一步」➔</div>
+            </div>
+        </div>
+        <button class="nav-btn" id="btn-Summer" onclick="goToPage('Autumn')">下一步 ➔</button>
+    </div>
+
+    <div class="game-page" id="page-Autumn">
+        <div class="word-bank" id="bank-Autumn"></div>
+        <div class="drop-container">
+            <div class="season-drop-box" id="box-Autumn" style="border-color: var(--autumn);">
+                <span class="check-mark">✅</span>
+                <h3 style="color: var(--autumn);">🍂 秋季</h3>
+                <div class="drop-zone" data-season="Autumn"></div>
+                <div class="next-hint">太棒了！按「下一步」➔</div>
+            </div>
+        </div>
+        <button class="nav-btn" id="btn-Autumn" onclick="goToPage('Winter')">下一步 ➔</button>
+    </div>
+
+    <div class="game-page" id="page-Winter">
+        <div class="word-bank" id="bank-Winter"></div>
+        <div class="drop-container">
+            <div class="season-drop-box" id="box-Winter" style="border-color: var(--winter);">
+                <span class="check-mark">✅</span>
+                <h3 style="color: var(--winter);">❄️ 冬季</h3>
+                <div class="drop-zone" data-season="Winter"></div>
+                <div class="next-hint">太棒了！按「總結」➔</div>
+            </div>
+        </div>
+        <button class="nav-btn" id="btn-Winter" onclick="goToPage('Review')">查看總結 ➔</button>
+    </div>
+
+    <div class="game-page" id="page-Review">
+        <div class="grid-container" id="final-grid">
+            <div class="grid-box" style="border-color: var(--spring);"><h4 style="color: var(--spring);">春季</h4><div class="grid-content" id="review-Spring"></div></div>
+            <div class="grid-box" style="border-color: var(--summer);"><h4 style="color: var(--summer);">夏季</h4><div class="grid-content" id="review-Summer"></div></div>
+            <div class="grid-box" style="border-color: var(--autumn);"><h4 style="color: var(--autumn);">秋季</h4><div class="grid-content" id="review-Autumn"></div></div>
+            <div class="grid-box" style="border-color: var(--winter);"><h4 style="color: var(--winter);">冬季</h4><div class="grid-content" id="review-Winter"></div></div>
+        </div>
+        <button class="nav-btn active" onclick="goToFinal()">完成學習！ 🎉</button>
+    </div>
+
+    <div id="page-Final">
+        <div class="final-card">
+            <h2>🏆 挑戰成功！ 🏆</h2>
+            <div style="font-size: 2rem; color: #7f8c8d; margin-bottom: 20px; font-weight: bold;">澳門四季天氣小總結</div>
+            <div class="final-text">
+                澳門的春季<span>溫暖</span>又<span>潮濕</span>。<br>
+                澳門的夏季<span>炎熱</span>又<span>多雨</span>。<br>
+                澳門的秋季<span>大風</span>又<span>涼爽</span>。<br>
+                澳門的冬季<span>寒冷</span>又<span>乾燥</span>。
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 詞庫配置 (包含干擾項)
+        const banksConfig = {
+            Spring: ['snowy', 'cold', 'dry', 'warm', 'wet'],
+            Summer: ['windy', 'cool', 'hot', 'dry', 'rainy'], 
+            Autumn: ['rainy', 'windy', 'cool', 'hot', 'snowy'],
+            Winter: ['wet', 'dry', 'warm', 'cold', 'rainy']
+        };
+
+        // 詞彙定義
+        const allWords = {
+            rainy: { text: "多雨", src: "https://cdn-icons-png.flaticon.com/512/1163/1163657.png" },
+            snowy: { text: "下雪", src: "https://cdn-icons-png.flaticon.com/512/2315/2315309.png" },
+            hot: { text: "炎熱", src: "https://cdn-icons-png.flaticon.com/512/1684/1684375.png" },
+            dry: { text: "乾燥", src: "https://cdn-icons-png.flaticon.com/512/2921/2921020.png" },
+            windy: { text: "大風", src: "https://cdn-icons-png.flaticon.com/512/959/959711.png" },
+            cool: { text: "涼爽", src: "https://cdn-icons-png.flaticon.com/512/1154/1154067.png" },
+            cold: { text: "寒冷", src: "https://cdn-icons-png.flaticon.com/512/2315/2315377.png" },
+            warm: { text: "溫暖", src: "https://cdn-icons-png.flaticon.com/512/2698/2698194.png" },
+            wet: { text: "潮濕", src: "https://cdn-icons-png.flaticon.com/512/4064/4064283.png" }
+        };
+
+        // 每個季節的正解
+        const targetWords = {
+            Spring: ['warm', 'wet'],
+            Summer: ['hot', 'rainy'],
+            Autumn: ['windy', 'cool'],
+            Winter: ['cold', 'dry']
+        };
+
+        let progress = { Spring: 0, Summer: 0, Autumn: 0, Winter: 0 };
+        let results = { Spring: [], Summer: [], Autumn: [], Winter: [] };
+
+        function init() {
+            Object.keys(banksConfig).forEach(season => {
+                const bankEl = document.getElementById(`bank-${season}`);
+                // 隨機排序詞庫
+                const shuffled = [...banksConfig[season]].sort(() => Math.random() - 0.5);
+                shuffled.forEach(wordId => {
+                    const data = allWords[wordId];
+                    const card = createCard(wordId, data);
+                    bankEl.appendChild(card);
+                });
+            });
+            setupDragAndDrop();
+        }
+
+        function createCard(id, data) {
+            const card = document.createElement('div');
+            card.className = 'word-card';
+            card.draggable = true;
+            card.dataset.id = id;
+            card.innerHTML = `
+                <img src="${data.src}">
+                <span class="word-text">${data.text}</span>
+                <span class="speaker">🔊</span>
+            `;
+            card.querySelector('.speaker').addEventListener('click', (e) => {
+                e.stopPropagation();
+                playAudio(data.text);
+            });
+            card.addEventListener('dragstart', e => {
+                e.dataTransfer.setData('text/plain', id);
+                card.style.opacity = '0.4';
+            });
+            card.addEventListener('dragend', () => card.style.opacity = '1');
+            
+            // 觸控支持
+            card.addEventListener('touchstart', handleTouchStart, {passive: false});
+            return card;
+        }
+
+        // 觸控拖曳邏輯 (針對平板和手機優化)
+        let activeTouchCard = null;
+        function handleTouchStart(e) {
+            activeTouchCard = this;
+        }
+
+        function setupDragAndDrop() {
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    zone.classList.add('drag-over');
+                });
+                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+                zone.addEventListener('drop', e => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                    const wordId = e.dataTransfer.getData('text/plain');
+                    handleWordDrop(wordId, zone);
+                });
+            });
+        }
+
+        function handleWordDrop(wordId, zone) {
+            const season = zone.dataset.season;
+            if (targetWords[season].includes(wordId)) {
+                if (results[season].includes(wordId)) return;
+
+                const originalCard = document.querySelector(`#page-${season} [data-id="${wordId}"]`);
+                const clone = originalCard.cloneNode(true);
+                clone.draggable = false;
+                zone.appendChild(clone);
+                originalCard.style.visibility = 'hidden';
+                
+                results[season].push(wordId);
+                progress[season]++;
+
+                if (progress[season] === 2) {
+                    const parentBox = document.getElementById(`box-${season}`);
+                    parentBox.querySelector('.check-mark').style.display = 'block';
+                    parentBox.querySelector('.next-hint').style.display = 'block';
+                    document.getElementById(`btn-${season}`).classList.add('active');
+                    playAudio("答對了，太棒了");
+                }
+            } else {
+                showFeedback();
+                playAudio("再試一次");
+            }
+        }
+
+        function goToPage(pageId) {
+            const currentPage = document.querySelector('.game-page.active');
+            const currentSeason = currentPage.id.replace('page-', '');
+            if (currentSeason !== 'Review' && progress[currentSeason] < 2) return;
+
+            currentPage.classList.remove('active');
+            document.getElementById(`page-${pageId}`).classList.add('active');
+            document.querySelectorAll('.step-dot').forEach(dot => dot.classList.remove('active'));
+            const targetDot = document.getElementById(`dot-${pageId}`);
+            if(targetDot) targetDot.classList.add('active');
+            if (pageId === 'Review') renderReview();
+        }
+
+        function renderReview() {
+            Object.keys(results).forEach(season => {
+                const container = document.getElementById(`review-${season}`);
+                container.innerHTML = '';
+                results[season].forEach(wordId => {
+                    const data = allWords[wordId];
+                    const card = createCard(wordId, data);
+                    card.draggable = false;
+                    container.appendChild(card);
+                });
+            });
+        }
+
+        function goToFinal() {
+            document.getElementById('page-Final').classList.add('active');
+            playAudio("恭喜你完成學習");
+        }
+
+        function playAudio(word) {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(word);
+            u.lang = 'zh-HK'; // 使用粵語或國語可調整 zh-CN
+            u.rate = 0.9;
+            window.speechSynthesis.speak(u);
+        }
+
+        function showFeedback() {
+            const fb = document.getElementById('feedback');
+            fb.style.display = 'block';
+            setTimeout(() => fb.style.display = 'none', 1500);
+        }
+
+        init();
+    </script>
+</body>
+</html>
