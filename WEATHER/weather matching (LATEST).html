@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Weather of four seasons in Macau</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f0faff;
+            --spring: #78e08f; --summer: #ffbe76;
+            --autumn: #ff7979; --winter: #74b9ff;
+            --accent: #f9ca24; --success: #2ecc71;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background: var(--bg-color);
+            height: 100vh; width: 100vw; overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; padding: 10px 25px;
+        }
+
+        h1 { font-size: 2.4rem; color: #0984e3; margin-bottom: 5px; text-shadow: 2px 2px 0px #fff; z-index: 20; position: relative; }
+
+        /* 導航進度 */
+        #nav-header { width: 100%; max-width: 800px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; z-index: 20; position: relative; }
+        .step-dot { width: 35px; height: 35px; background: #fff; border: 3px solid #ced6e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; transition: 0.3s; }
+        .step-dot.active { background: var(--accent); border-color: #fff; transform: scale(1.2); }
+
+        /* 頁面控制器 */
+        .game-page { 
+            display: none; 
+            width: 100%; height: 100%; 
+            flex-direction: column; align-items: center; 
+            animation: slideIn 0.4s ease-out; 
+            position: relative; 
+            z-index: 10;
+        }
+        .game-page.active { display: flex; }
+
+        /* 澳門景點背景設置 */
+        .game-page::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0.25; /* 調高一點確保在 iPad 上清晰 */
+            z-index: -1;
+            border-radius: 30px;
+        }
+
+        /* 每一頁分配不同景點背景 (使用 Wikimedia 或穩定圖源) */
+        #page-Spring::before { background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Ruins_of_St._Paul%27s_Macau.JPG/1024px-Ruins_of_St._Paul%27s_Macau.JPG'); }
+        #page-Summer::before { background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Hac_Sa_Beach.JPG/1024px-Hac_Sa_Beach.JPG'); }
+        #page-Autumn::before { background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/Guia_Lighthouse_Macau.JPG/1024px-Guia_Lighthouse_Macau.JPG'); }
+        #page-Winter::before { background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Senado_Square_Macau.JPG/1024px-Senado_Square_Macau.JPG'); }
+        #page-Review::before { background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Macau_Tower_Skyline.jpg/1024px-Macau_Tower_Skyline.jpg'); }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* 詞庫區域 */
+        .word-bank {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; padding: 12px;
+            background: rgba(255, 255, 255, 0.85); border-radius: 20px;
+            width: 100%; max-width: 1000px; min-height: 140px;
+            box-shadow: 0 6px 0px #dfe6e9; border: 3px solid #fff; margin-bottom: 15px;
+        }
+
+        .word-card {
+            background: #fff; border: 3px solid #ced6e0; border-radius: 15px;
+            padding: 8px; width: 110px; height: 85px;
+            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+            box-shadow: 0 4px 0px #ced6e0; touch-action: none;
+        }
+        .word-card img { width: 38px; height: 38px; pointer-events: none; }
+        .word-card span.word-text { font-weight: 600; font-size: 1rem; pointer-events: none; }
+        .speaker { background: #f1f2f6; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid #ccc; }
+
+        /* 放置區 */
+        .drop-container { flex: 1; width: 100%; max-width: 750px; display: flex; justify-content: center; align-items: center; margin-bottom: 90px; position: relative; }
+        .season-drop-box { width: 100%; height: 260px; background: rgba(255, 255, 255, 0.9); border-radius: 40px; border: 6px dashed #ced6e0; display: flex; flex-direction: column; align-items: center; padding: 15px; position: relative; }
+        .season-drop-box h3 { font-size: 1.8rem; margin-bottom: 10px; padding: 2px 25px; border-radius: 15px; }
+        .drop-zone { flex: 1; width: 100%; display: flex; gap: 20px; justify-content: center; align-items: center; background: rgba(240,248,255,0.5); border-radius: 30px; }
+
+        /* 打勾與提示 */
+        .check-mark { display: none; position: absolute; top: 10px; right: 20px; font-size: 3rem; color: var(--success); animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .next-hint { display: none; position: absolute; bottom: -45px; color: var(--success); font-weight: 800; font-size: 1.2rem; animation: blink 1s infinite; }
+        @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        /* 田字彙整頁 (Page 5) */
+        .grid-container { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 15px; width: 100%; max-width: 900px; height: 60vh; margin-top: 10px; }
+        .grid-box { background: rgba(255, 255, 255, 0.9); border: 4px solid #fff; border-radius: 25px; display: flex; flex-direction: column; align-items: center; padding: 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        .grid-box h4 { font-size: 1.3rem; margin-bottom: 5px; }
+        .grid-content { display: flex; gap: 8px; justify-content: center; width: 100%; }
+
+        /* 按鈕 */
+        .nav-btn {
+            position: fixed; bottom: 25px; right: 40px; padding: 12px 40px; font-size: 1.6rem; font-weight: 700;
+            border-radius: 50px; border: none; background: #ced6e0; color: #fff; cursor: not-allowed; transition: 0.3s; z-index: 100;
+        }
+        .nav-btn.active { background: #0984e3; cursor: pointer; box-shadow: 0 6px 0px #0769b5; }
+
+        /* 第六頁：超級大總結 */
+        #page-Final { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff; z-index: 10000; flex-direction: column; justify-content: center; align-items: center; }
+        #page-Final.active { display: flex; animation: zoomIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        @keyframes zoomIn { from { transform: scale(0.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .final-card {
+            width: 90%; max-width: 950px; background: linear-gradient(135deg, #fff 0%, #f0faff 100%);
+            border: 12px solid #2ecc71; border-radius: 50px; padding: 40px; text-align: center;
+            box-shadow: 0 0 50px rgba(46,204,113,0.3);
+        }
+        .final-card h2 { color: #2ecc71; font-size: 3.5rem; margin-bottom: 20px; animation: pulse 2s infinite; }
+        .final-text { font-size: 2.5rem; line-height: 1.8; font-weight: 700; color: #2c3e50; }
+        .final-text span { color: #ff4757; text-decoration: underline; text-underline-offset: 8px; }
+
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+
+        #feedback { position: fixed; top: 20px; background: #ff4757; color: white; padding: 8px 30px; border-radius: 50px; font-size: 1.3rem; display: none; z-index: 20000; }
+        .drag-over { background: #f1f2f6 !important; border-color: #74b9ff !important; }
+    </style>
+</head>
+<body>
+
+    <div id="feedback">Oops! Try again! 🌟</div>
+    <h1>Weather of four seasons in Macau</h1>
+
+    <div id="nav-header">
+        <div class="step-dot active" id="dot-Spring">1</div>
+        <div class="step-dot" id="dot-Summer">2</div>
+        <div class="step-dot" id="dot-Autumn">3</div>
+        <div class="step-dot" id="dot-Winter">4</div>
+        <div class="step-dot" id="dot-Review">5</div>
+    </div>
+
+    <!-- Page 1: Spring -->
+    <div class="game-page active" id="page-Spring">
+        <div class="word-bank" id="bank-Spring"></div>
+        <div class="drop-container">
+            <div class="season-drop-box" id="box-Spring" style="border-color: var(--spring);">
+                <span class="check-mark">✅</span>
+                <h3 style="color: var(--spring);">🌸 Spring</h3>
+                <div class="drop-zone" data-season="Spring"></div>
+                <div class="next-hint">Great! Click "Next ➔"</div>
+            </div>
+        </div>
+        <button class="nav-btn" id="btn-Spring" onclick="goToPage('Summer')">Next ➔</button>
+    </div>
+
+    <!-- Page 2: Summer -->
+    <div class="game-page" id="page-Summer">
+        <div class="word-bank" id="bank-Summer"></div>
+        <div class="drop-container">
+            <div class="season-drop-box" id="box-Summer" style="border-color: var(--summer);">
+                <span class="check-mark">✅</span>
+                <h3 style="color: var(--summer);">☀️ Summer</h3>
+                <div class="drop-zone" data-season="Summer"></div>
+                <div class="next-hint">Great! Click "Next ➔"</div>
+            </div>
+        </div>
+        <button class="nav-btn" id="btn-Summer" onclick="goToPage('Autumn')">Next ➔</button>
+    </div>
+
+    <!-- Page 3: Autumn -->
+    <div class="game-page" id="page-Autumn">
+        <div class="word-bank" id="bank-Autumn"></div>
+        <div class="drop-container">
+            <div class="season-drop-box" id="box-Autumn" style="border-color: var(--autumn);">
+                <span class="check-mark">✅</span>
+                <h3 style="color: var(--autumn);">🍂 Autumn</h3>
+                <div class="drop-zone" data-season="Autumn"></div>
+                <div class="next-hint">Great! Click "Next ➔"</div>
+            </div>
+        </div>
+        <button class="nav-btn" id="btn-Autumn" onclick="goToPage('Winter')">Next ➔</button>
+    </div>
+
+    <!-- Page 4: Winter -->
+    <div class="game-page" id="page-Winter">
+        <div class="word-bank" id="bank-Winter"></div>
+        <div class="drop-container">
+            <div class="season-drop-box" id="box-Winter" style="border-color: var(--winter);">
+                <span class="check-mark">✅</span>
+                <h3 style="color: var(--winter);">❄️ Winter</h3>
+                <div class="drop-zone" data-season="Winter"></div>
+                <div class="next-hint">Great! Click "Review ➔"</div>
+            </div>
+        </div>
+        <button class="nav-btn" id="btn-Winter" onclick="goToPage('Review')">Review ➔</button>
+    </div>
+
+    <!-- Page 5: Review -->
+    <div class="game-page" id="page-Review">
+        <div class="grid-container" id="final-grid">
+            <div class="grid-box" style="border-color: var(--spring);"><h4 style="color: var(--spring);">Spring</h4><div class="grid-content" id="review-Spring"></div></div>
+            <div class="grid-box" style="border-color: var(--summer);"><h4 style="color: var(--summer);">Summer</h4><div class="grid-content" id="review-Summer"></div></div>
+            <div class="grid-box" style="border-color: var(--autumn);"><h4 style="color: var(--autumn);">Autumn</h4><div class="grid-content" id="review-Autumn"></div></div>
+            <div class="grid-box" style="border-color: var(--winter);"><h4 style="color: var(--winter);">Winter</h4><div class="grid-content" id="review-Winter"></div></div>
+        </div>
+        <button class="nav-btn active" onclick="goToFinal()">Finish! 🎉</button>
+    </div>
+
+    <!-- Page 6: Final -->
+    <div id="page-Final">
+        <div class="final-card">
+            <h2>🏆 YOU DID IT! 🏆</h2>
+            <div style="font-size: 1.8rem; color: #7f8c8d; margin-bottom: 15px;">Weather of four seasons in Macau</div>
+            <div class="final-text">
+                In Macau, it is <span>warm</span> and <span>wet</span> in spring.<br>
+                In Macau, it is <span>hot</span> and <span>rainy</span> in summer.<br>
+                In Macau, it is <span>windy</span> and <span>cool</span> in autumn.<br>
+                In Macau, it is <span>cold</span> and <span>dry</span> in winter.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const banksConfig = {
+            Spring: ['snowy', 'cold', 'dry', 'warm', 'wet'],
+            Summer: ['windy', 'cool', 'hot', 'dry', 'rainy'], 
+            Autumn: ['rainy', 'windy', 'cool', 'hot', 'snowy'],
+            Winter: ['wet', 'dry', 'warm', 'cold', 'rainy']
+        };
+
+        const allWords = {
+            cloudy: { text: "cloudy", src: "https://cdn-icons-png.flaticon.com/512/1146/1146869.png" },
+            rainy: { text: "rainy", src: "https://cdn-icons-png.flaticon.com/512/1163/1163657.png" },
+            snowy: { text: "snowy", src: "https://cdn-icons-png.flaticon.com/512/2315/2315309.png" },
+            hot: { text: "hot", src: "https://cdn-icons-png.flaticon.com/512/1684/1684375.png" },
+            dry: { text: "dry", src: "dry.png" },
+            windy: { text: "windy", src: "windy.png" },
+            cool: { text: "cool", src: "cool.png" },
+            cold: { text: "cold", src: "cold.png" },
+            warm: { text: "warm", src: "warm.png" },
+            wet: { text: "wet", src: "wet.png" }
+        };
+
+        const targetWords = {
+            Spring: ['warm', 'wet'],
+            Summer: ['hot', 'rainy'],
+            Autumn: ['windy', 'cool'],
+            Winter: ['cold', 'dry']
+        };
+
+        let progress = { Spring: 0, Summer: 0, Autumn: 0, Winter: 0 };
+        let results = { Spring: [], Summer: [], Autumn: [], Winter: [] };
+
+        function init() {
+            Object.keys(banksConfig).forEach(season => {
+                const bankEl = document.getElementById(`bank-${season}`);
+                banksConfig[season].forEach(wordId => {
+                    const data = allWords[wordId];
+                    const card = createCard(wordId, data);
+                    bankEl.appendChild(card);
+                });
+            });
+            setupDragAndDrop();
+        }
+
+        function createCard(id, data) {
+            const card = document.createElement('div');
+            card.className = 'word-card';
+            card.draggable = true;
+            card.dataset.id = id;
+            card.innerHTML = `
+                <img src="${data.src}">
+                <span class="word-text">${data.text}</span>
+                <span class="speaker">🔊</span>
+            `;
+            card.querySelector('.speaker').addEventListener('click', (e) => {
+                e.stopPropagation();
+                playAudio(data.text);
+            });
+            card.addEventListener('dragstart', e => {
+                e.dataTransfer.setData('text/plain', id);
+                card.style.opacity = '0.4';
+            });
+            card.addEventListener('dragend', () => card.style.opacity = '1');
+            return card;
+        }
+
+        function setupDragAndDrop() {
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    zone.classList.add('drag-over');
+                });
+                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+                zone.addEventListener('drop', e => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                    const wordId = e.dataTransfer.getData('text/plain');
+                    const season = zone.dataset.season;
+
+                    if (targetWords[season].includes(wordId)) {
+                        if (results[season].includes(wordId)) return;
+
+                        const originalCard = document.querySelector(`#page-${season} [data-id="${wordId}"]`);
+                        const clone = originalCard.cloneNode(true);
+                        clone.draggable = false;
+                        zone.appendChild(clone);
+                        originalCard.style.visibility = 'hidden';
+                        
+                        results[season].push(wordId);
+                        progress[season]++;
+
+                        if (progress[season] === 2) {
+                            const parentBox = document.getElementById(`box-${season}`);
+                            parentBox.querySelector('.check-mark').style.display = 'block';
+                            parentBox.querySelector('.next-hint').style.display = 'block';
+                            document.getElementById(`btn-${season}`).classList.add('active');
+                            playAudio("Good job");
+                        }
+                    } else {
+                        showFeedback();
+                    }
+                });
+            });
+        }
+
+        function goToPage(pageId) {
+            const currentPage = document.querySelector('.game-page.active');
+            const currentSeason = currentPage.id.replace('page-', '');
+            if (currentSeason !== 'Review' && progress[currentSeason] < 2) return;
+
+            currentPage.classList.remove('active');
+            document.getElementById(`page-${pageId}`).classList.add('active');
+            document.querySelectorAll('.step-dot').forEach(dot => dot.classList.remove('active'));
+            const targetDot = document.getElementById(`dot-${pageId}`);
+            if(targetDot) targetDot.classList.add('active');
+            if (pageId === 'Review') renderReview();
+        }
+
+        function renderReview() {
+            Object.keys(results).forEach(season => {
+                const container = document.getElementById(`review-${season}`);
+                container.innerHTML = '';
+                results[season].forEach(wordId => {
+                    const data = allWords[wordId];
+                    const card = createCard(wordId, data);
+                    card.draggable = false;
+                    container.appendChild(card);
+                });
+            });
+        }
+
+        function goToFinal() {
+            document.getElementById('page-Final').classList.add('active');
+            playAudio("Congratulations, you finished the lesson");
+        }
+
+        function playAudio(word) {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(word);
+            u.lang = 'en-US';
+            u.rate = 0.85;
+            window.speechSynthesis.speak(u);
+        }
+
+        function showFeedback() {
+            const fb = document.getElementById('feedback');
+            fb.style.display = 'block';
+            setTimeout(() => fb.style.display = 'none', 1500);
+        }
+
+        init();
+    </script>
+</body>
+</html>
