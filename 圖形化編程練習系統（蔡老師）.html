@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>等级考试真题练习系统</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #f0f4f8;
+      font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 12px;
+    }
+    .container {
+      max-width: 750px;
+      width: 100%;
+      background: white;
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.06);
+    }
+    h2 {
+      text-align: center;
+      font-size: 1.5rem;
+      margin-bottom: 16px;
+      color: #0b1e33;
+    }
+    h2 span {
+      background: #1d4ed8;
+      color: white;
+      font-size: 0.75rem;
+      padding: 3px 12px;
+      border-radius: 20px;
+      margin-left: 6px;
+    }
+    .top {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      background: #f8fafc;
+      padding: 12px;
+      border-radius: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      border: 1px solid #e2e8f0;
+    }
+    .fg {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .fg label {
+      font-weight: 500;
+      font-size: 0.85rem;
+      color: #1e293b;
+    }
+    .fg input, .fg select {
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      background: white;
+      outline: none;
+    }
+    .grid {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+    .row {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      background: #f9fafb;
+      padding: 6px 8px;
+      border-radius: 10px;
+      flex-wrap: wrap;
+      border: 1px solid #edf2f7;
+    }
+    .qu {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      background: white;
+      padding: 2px 4px;
+      border-radius: 6px;
+      border: 1px solid #e9eef3;
+    }
+    .qu.wrong {
+      border-color: #ef4444;
+      background: #fef2f2;
+    }
+    .qu span {
+      font-weight: 600;
+      font-size: 0.75rem;
+      min-width: 18px;
+      text-align: right;
+    }
+    .qu select {
+      padding: 5px 2px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      width: 58px;
+      text-align: center;
+      font-weight: 500;
+      cursor: pointer;
+      background: white;
+    }
+    /* 手动输入框默认隐藏 */
+    .qu input.other-input {
+      width: 60px;
+      padding: 5px 2px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      text-align: center;
+      display: none;
+    }
+    /* 当选择“其它”时显示输入框 */
+    .qu.show-other select {
+      display: none;
+    }
+    .qu.show-other input.other-input {
+      display: inline-block;
+    }
+    .action {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #f1f5f9;
+      padding: 10px 14px;
+      border-radius: 16px;
+      margin-bottom: 16px;
+      border: 1px solid #e2e8f0;
+    }
+    .wrong-tag {
+      background: #fecaca;
+      color: #991b1b;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .wrong-text {
+      flex: 1;
+      background: white;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      word-break: break-word;
+      line-height: 1.4;
+    }
+    .wrong-text.green {
+      color: #059669;
+      background: #d1fae5;
+      font-weight: 600;
+    }
+    .wrong-text.red {
+      color: #b91c1c;
+      background: #fee2e2;
+      font-weight: 600;
+    }
+    button {
+      color: white;
+      border: none;
+      padding: 9px 22px;
+      border-radius: 24px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: 0.2s;
+    }
+    .btn-main { background: #1e293b; }
+    .btn-main:hover { background: #0f172a; }
+    .btn-pending {
+      background: #b45309;
+      padding: 8px 18px;
+    }
+    .btn-pending:hover { background: #92400e; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .pending {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fff7ed;
+      padding: 10px 14px;
+      border-radius: 16px;
+      border: 1px solid #fed7aa;
+      margin-bottom: 16px;
+    }
+    .pending label {
+      background: #ffedd5;
+      color: #9a3412;
+      font-weight: 600;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+    }
+    .pending input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid #fdba74;
+      border-radius: 14px;
+      font-size: 0.8rem;
+      background: white;
+    }
+    /* 新增按鈕區域 */
+    .extra-actions {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .btn-save {
+      background: #0d9488;
+    }
+    .btn-save:hover {
+      background: #0f766e;
+    }
+    .btn-load {
+      background: #7c3aed;
+    }
+    .btn-load:hover {
+      background: #6d28d9;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h2>📋 等級考試真題練習 <span>答題卡</span></h2>
+
+  <div class="top">
+    <div class="fg"><label>👤 姓名</label><input id="nameInput" style="width:100px" placeholder="姓名"></div>
+    <div class="fg"><label>📊 等級</label>
+      <select id="levelSelect">
+        <option value="二級" selected>二級</option>
+        <option value="三級">三級</option>
+        <option value="四級">四級</option>
+      </select>
+    </div>
+    <div class="fg"><label>📌 套數</label><input id="setInput" style="width:70px" value="1"></div>
+  </div>
+
+  <div class="grid" id="answerGrid"></div>
+
+  <div class="action">
+    <span class="wrong-tag">❌ 錯題題號</span>
+    <span class="wrong-text" id="wrongDisplay">尚未提交</span>
+    <button class="btn-main" id="submitAnswersBtn">✓ 提交答案</button>
+  </div>
+
+  <div class="pending">
+    <label>⏳ 待解決題號</label>
+    <input type="text" id="pendingInput" placeholder="例如：3, 12, 28（手動記錄）">
+    <button class="btn-pending" id="pendingSubmitBtn">📤 待解決提交</button>
+  </div>
+
+  <div class="extra-actions">
+    <button class="btn-save" id="saveAnswersBtn">💾 保存已做題目答案</button>
+    <button class="btn-load" id="loadAnswersBtn">📥 提取已做題目答案</button>
+  </div>
+</div>
+
+<script>
+  (function() {
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxoIXaXRa8vp1tlStlKt0OvVGIHTKXy7L0IcHCX9Dv1eeD1gFsDT7_W-h6Zy-mOfv_k/exec';
+
+    const TOTAL_ROWS = 7;
+    const ITEMS_PER_ROW = 5;
+    const TOTAL_QUESTIONS = 35;
+    const OPTIONS = ['A', 'B', 'C', 'D', '正确', '错误', '其它'];
+
+    let widgets = [];
+    let currentWrongQuestions = [];
+
+    function renderGrid() {
+      const grid = document.getElementById('answerGrid');
+      grid.innerHTML = '';
+      widgets = [];
+
+      for (let r = 0; r < TOTAL_ROWS; r++) {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'row';
+        const rowWidgets = [];
+
+        for (let c = 0; c < ITEMS_PER_ROW; c++) {
+          const qNum = r * ITEMS_PER_ROW + c + 1;
+          const unit = document.createElement('div');
+          unit.className = 'qu';
+          unit.setAttribute('data-question', qNum);
+
+          const label = document.createElement('span');
+          label.textContent = qNum + '.';
+
+          const sel = document.createElement('select');
+          sel.innerHTML = '<option value="">--</option>';
+          OPTIONS.forEach(opt => {
+            const option = document.createElement('option');
+            option.value = opt;
+            option.textContent = opt;
+            sel.appendChild(option);
+          });
+
+          const otherInput = document.createElement('input');
+          otherInput.type = 'text';
+          otherInput.className = 'other-input';
+          otherInput.placeholder = '輸入答案';
+          otherInput.maxLength = 10;
+
+          // 切換顯示
+          sel.addEventListener('change', function() {
+            if (this.value === '其它') {
+              unit.classList.add('show-other');
+              otherInput.focus();
+            } else {
+              unit.classList.remove('show-other');
+              otherInput.value = '';
+            }
+          });
+
+          unit.appendChild(label);
+          unit.appendChild(sel);
+          unit.appendChild(otherInput);
+          rowDiv.appendChild(unit);
+          rowWidgets.push({ unit, select: sel, otherInput: otherInput });
+        }
+
+        grid.appendChild(rowDiv);
+        widgets.push(rowWidgets);
+      }
+    }
+
+    function collectAnswers() {
+      const answers = [];
+      for (let r = 0; r < TOTAL_ROWS; r++) {
+        for (let c = 0; c < ITEMS_PER_ROW; c++) {
+          const w = widgets[r][c];
+          const selectVal = w.select.value;
+          if (selectVal === '其它') {
+            answers.push(w.otherInput.value.trim().toUpperCase());
+          } else {
+            answers.push(selectVal);
+          }
+        }
+      }
+      return answers;
+    }
+
+    function clearMarks() {
+      for (let r = 0; r < TOTAL_ROWS; r++) {
+        for (let c = 0; c < ITEMS_PER_ROW; c++) {
+          widgets[r][c].unit.classList.remove('wrong');
+        }
+      }
+    }
+
+    function markWrong(questionNumbers) {
+      clearMarks();
+      questionNumbers.forEach(qNum => {
+        const r = Math.floor((qNum - 1) / ITEMS_PER_ROW);
+        const c = (qNum - 1) % ITEMS_PER_ROW;
+        if (widgets[r] && widgets[r][c]) {
+          widgets[r][c].unit.classList.add('wrong');
+        }
+      });
+    }
+
+    async function fetchCorrectAnswers(level, setNum) {
+      const body = 'action=getCorrectAnswers&level=' + encodeURIComponent(level) +
+                   '&setNumber=' + encodeURIComponent(setNum);
+      const resp = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body
+      });
+      const data = await resp.json();
+      if (data.success && Array.isArray(data.correctAnswers)) {
+        return data.correctAnswers;
+      }
+      throw new Error('无法获取正确答案');
+    }
+
+    // 提交答案
+    async function handleSubmit() {
+      const name = document.getElementById('nameInput').value.trim();
+      const level = document.getElementById('levelSelect').value;
+      const setNum = document.getElementById('setInput').value.trim();
+
+      if (!name) return alert('請輸入姓名');
+      if (!setNum) return alert('請輸入第幾套');
+
+      const studentAnswers = collectAnswers();
+      const filled = studentAnswers.filter(a => a !== '').length;
+      if (filled < TOTAL_QUESTIONS && !confirm(`還有 ${TOTAL_QUESTIONS - filled} 題未作答，確定提交嗎？`)) return;
+
+      const btn = document.getElementById('submitAnswersBtn');
+      btn.disabled = true;
+      btn.textContent = '提交中...';
+
+      try {
+        const body = 'action=submitAnswers&name=' + encodeURIComponent(name) +
+                     '&level=' + encodeURIComponent(level) +
+                     '&setNumber=' + encodeURIComponent(setNum) +
+                     '&answers=' + encodeURIComponent(studentAnswers.join(','));
+        const res = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body
+        });
+        const data = await res.json();
+
+        if (!data.success) {
+          alert('提交失敗：' + (data.message || '服务器错误'));
+          return;
+        }
+
+        const wrongQuestions = data.wrongQuestions || [];
+        currentWrongQuestions = wrongQuestions;
+
+        const display = document.getElementById('wrongDisplay');
+
+        if (wrongQuestions.length === 0) {
+          display.textContent = '🎉 全部正確';
+          display.className = 'wrong-text green';
+          clearMarks();
+          alert('👏 完美！全部正確。');
+        } else {
+          const correctAnswers = await fetchCorrectAnswers(level, setNum);
+          const wrongStr = wrongQuestions.map(qNum => {
+            const correct = correctAnswers[qNum - 1] || '?';
+            return qNum + '（答案：' + correct + '）';
+          }).join(', ');
+
+          display.textContent = wrongStr;
+          display.className = 'wrong-text red';
+          markWrong(wrongQuestions);
+
+          alert(`提交成功。共有 ${wrongQuestions.length} 題錯誤。`);
+
+          const pendingInput = document.getElementById('pendingInput');
+          if (!pendingInput.value.trim() && confirm('是否將錯題題號自動填入「待解決題號」？')) {
+            pendingInput.value = wrongQuestions.join(', ');
+          }
+        }
+      } catch (error) {
+        alert('網絡錯誤：' + error.message);
+        console.error(error);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '✓ 提交答案';
+      }
+    }
+
+    // 待解決提交
+    async function handlePendingSubmit() {
+      const name = document.getElementById('nameInput').value.trim();
+      const level = document.getElementById('levelSelect').value;
+      const setNum = document.getElementById('setInput').value.trim();
+      const pendingText = document.getElementById('pendingInput').value.trim();
+
+      if (!name) return alert('請先填寫姓名');
+      if (!setNum) return alert('請輸入第幾套');
+      if (!pendingText) return alert('請輸入待解決題號');
+
+      const numbers = pendingText.split(/[,\s]+/).filter(s => /^\d+$/.test(s));
+      if (numbers.length === 0) return alert('請輸入有效的題號，例如：3,12,28');
+
+      const btn = document.getElementById('pendingSubmitBtn');
+      btn.disabled = true;
+      btn.textContent = '提交中...';
+
+      try {
+        const body = 'action=submitPending&name=' + encodeURIComponent(name) +
+                     '&level=' + encodeURIComponent(level) +
+                     '&setNumber=' + encodeURIComponent(setNum) +
+                     '&pendingQuestions=' + encodeURIComponent(pendingText);
+        const resp = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body
+        });
+        const data = await resp.json();
+        if (data.success) {
+          alert('📤 已成功提交！\n（姓名：' + name + '，等級：' + level + '，套數：' + setNum + '，待解決：' + pendingText + '）');
+        } else {
+          alert('提交失敗：' + (data.message || '未知错误'));
+        }
+      } catch (error) {
+        alert('網絡錯誤：' + error.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '📤 待解決提交';
+      }
+    }
+
+    // 保存已做題目答案
+    async function handleSaveAnswers() {
+      const name = document.getElementById('nameInput').value.trim();
+      const level = document.getElementById('levelSelect').value;
+      const setNum = document.getElementById('setInput').value.trim();
+
+      if (!name) return alert('請輸入姓名');
+      if (!setNum) return alert('請輸入第幾套');
+
+      const answers = collectAnswers();
+      const answersStr = answers.join(',');
+
+      const btn = document.getElementById('saveAnswersBtn');
+      btn.disabled = true;
+      btn.textContent = '保存中...';
+
+      try {
+        const body = 'action=saveAnswers&name=' + encodeURIComponent(name) +
+                     '&level=' + encodeURIComponent(level) +
+                     '&setNumber=' + encodeURIComponent(setNum) +
+                     '&answers=' + encodeURIComponent(answersStr);
+        const resp = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body
+        });
+        const data = await resp.json();
+        if (data.success) {
+          alert('💾 答案已保存成功！');
+        } else {
+          alert('保存失敗：' + (data.message || '未知错误'));
+        }
+      } catch (error) {
+        alert('網絡錯誤：' + error.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '💾 保存已做題目答案';
+      }
+    }
+
+    // 提取已做題目答案
+    async function handleLoadAnswers() {
+      const name = document.getElementById('nameInput').value.trim();
+      const level = document.getElementById('levelSelect').value;
+      const setNum = document.getElementById('setInput').value.trim();
+
+      if (!name) return alert('請輸入姓名');
+      if (!setNum) return alert('請輸入第幾套');
+
+      const btn = document.getElementById('loadAnswersBtn');
+      btn.disabled = true;
+      btn.textContent = '提取中...';
+
+      try {
+        const body = 'action=getSavedAnswers&name=' + encodeURIComponent(name) +
+                     '&level=' + encodeURIComponent(level) +
+                     '&setNumber=' + encodeURIComponent(setNum);
+        const resp = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body
+        });
+        const data = await resp.json();
+        if (data.success && data.answers) {
+          fillAnswersFromString(data.answers);
+          alert('📥 答案提取成功，已填入答題卡。');
+        } else {
+          alert('提取失敗：' + (data.message || '找不到對應的暫存答案'));
+        }
+      } catch (error) {
+        alert('網絡錯誤：' + error.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '📥 提取已做題目答案';
+      }
+    }
+
+    // 用逗號分隔的答案字串填充界面
+    function fillAnswersFromString(answersStr) {
+      const answerArray = answersStr.split(',');
+      // 清空所有題目
+      for (let r = 0; r < TOTAL_ROWS; r++) {
+        for (let c = 0; c < ITEMS_PER_ROW; c++) {
+          const w = widgets[r][c];
+          w.select.value = '';
+          w.otherInput.value = '';
+          w.unit.classList.remove('show-other');
+        }
+      }
+
+      // 填入
+      for (let i = 0; i < Math.min(answerArray.length, TOTAL_QUESTIONS); i++) {
+        const ans = answerArray[i].trim();
+        if (ans === '') continue;
+
+        const r = Math.floor(i / ITEMS_PER_ROW);
+        const c = i % ITEMS_PER_ROW;
+        const w = widgets[r][c];
+
+        if (OPTIONS.slice(0, -1).includes(ans)) { // A,B,C,D,正确,错误
+          w.select.value = ans;
+          w.unit.classList.remove('show-other');
+          w.otherInput.value = '';
+        } else {
+          // 其它答案
+          w.select.value = '其它';
+          w.unit.classList.add('show-other');
+          w.otherInput.value = ans;
+        }
+      }
+    }
+
+    // 綁定事件
+    document.getElementById('submitAnswersBtn').addEventListener('click', handleSubmit);
+    document.getElementById('pendingSubmitBtn').addEventListener('click', handlePendingSubmit);
+    document.getElementById('saveAnswersBtn').addEventListener('click', handleSaveAnswers);
+    document.getElementById('loadAnswersBtn').addEventListener('click', handleLoadAnswers);
+
+    // 快速鍵 Ctrl+Enter 提交答案
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleSubmit();
+      }
+    });
+
+    renderGrid();
+    document.getElementById('wrongDisplay').textContent = '尚未提交';
+    document.getElementById('wrongDisplay').className = 'wrong-text';
+  })();
+</script>
+</body>
+</html>
