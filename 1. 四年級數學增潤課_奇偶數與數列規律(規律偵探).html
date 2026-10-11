@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%95%B5%3C/text%3E%3C/svg%3E">
+<title>規律偵探 · 奇偶之謎</title>
+<style>
+  :root{
+    --bg:#FBF8F3; --primary:#2F5D8C; --primary2:#3E7BB0;
+    --support:#E9DFD2; --accent:#E4633A; --ink:#3A3A3A;
+    --grey:#8A8478; --white:#FFFFFF; --lightblue:#E3ECF6;
+    --good:#2E9E6B; --goodbg:#E4F5EC; --bad:#D9483B; --badbg:#FBE6E3;
+    --shadow:0 8px 26px rgba(47,93,140,.14);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei","Microsoft YaHei",sans-serif;
+    background:var(--bg); color:var(--ink); overflow:hidden;
+  }
+  #app{position:relative; width:100%; height:100%; overflow:hidden;}
+
+  /* ---------- 通用層 ---------- */
+  .screen{
+    position:absolute; inset:0; display:none; flex-direction:column;
+    padding:clamp(14px,2.6vh,26px) clamp(16px,3.2vw,40px);
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+  }
+  .screen.on{display:flex;}
+
+  .btn{
+    border:none; border-radius:999px; cursor:pointer; font-weight:700;
+    font-family:inherit; transition:transform .12s ease, box-shadow .12s ease, opacity .12s;
+    padding:14px 34px; font-size:clamp(15px,2.2vw,19px);
+  }
+  .btn:active{transform:scale(.96);}
+  .btn-primary{background:var(--primary); color:#fff; box-shadow:0 6px 18px rgba(47,93,140,.32);}
+  .btn-primary:hover{background:var(--primary2);}
+  .btn-accent{background:var(--accent); color:#fff; box-shadow:0 6px 18px rgba(228,99,58,.34);}
+  .btn-ghost{background:rgba(47,93,140,.09); color:var(--primary);}
+  .btn:disabled{opacity:.45; cursor:not-allowed; transform:none;}
+
+  /* ---------- 頂欄 ---------- */
+  #topbar{
+    display:none; align-items:center; gap:14px; padding:10px clamp(16px,3.2vw,40px) 0;
+    flex:0 0 auto;
+  }
+  #topbar.on{display:flex;}
+  .tb-title{font-size:clamp(12px,1.7vw,14px); color:var(--grey); font-weight:700; letter-spacing:.04em; white-space:nowrap;}
+  .progress-wrap{flex:1; height:14px; background:rgba(47,93,140,.12); border-radius:999px; overflow:hidden;}
+  .progress-bar{height:100%; width:0%; border-radius:999px;
+    background:linear-gradient(90deg,var(--primary2),var(--accent)); transition:width .5s cubic-bezier(.2,.8,.2,1);}
+  .stars{display:flex; gap:3px; font-size:clamp(15px,2vw,19px); white-space:nowrap;}
+  .stars .s{opacity:.22; transition:opacity .4s, transform .4s;}
+  .stars .s.lit{opacity:1; transform:scale(1.12);}
+
+  /* ---------- 封面 ---------- */
+  #s-cover{justify-content:center; align-items:center; text-align:center;
+    background:radial-gradient(1200px 700px at 50% -10%, #EAF1F8 0%, var(--bg) 60%);}
+  .cover-badge{width:96px;height:96px;border-radius:50%;background:var(--accent);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:800;
+    box-shadow:0 10px 30px rgba(228,99,58,.4); margin-bottom:18px;
+    animation:pop .7s cubic-bezier(.2,1.4,.5,1) both;}
+  @keyframes pop{from{transform:scale(.2);opacity:0}to{transform:scale(1);opacity:1}}
+  .cover-title{font-size:clamp(30px,6.4vw,56px); font-weight:800; color:var(--primary); line-height:1.12; margin:0;}
+  .cover-sub{font-size:clamp(15px,2.6vw,22px); color:var(--accent); font-weight:700; margin:8px 0 6px;}
+  .cover-story{max-width:640px; font-size:clamp(14px,2.1vw,18px); color:var(--grey); line-height:1.75; margin:14px 0 26px;}
+  .cover-story b{color:var(--primary);}
+
+  /* ---------- 故事卡 ---------- */
+  .story-card{
+    max-width:720px; margin:auto; background:#fff; border-radius:22px; box-shadow:var(--shadow);
+    padding:clamp(20px,4vw,38px); border-left:8px solid var(--accent);
+  }
+  .story-emoji{font-size:clamp(38px,7vw,60px); margin-bottom:6px;}
+  .story-title{font-size:clamp(19px,3.2vw,27px); font-weight:800; color:var(--primary); margin:0 0 12px;}
+  .story-text{font-size:clamp(14px,2.2vw,19px); line-height:1.85; color:var(--ink); margin:0 0 8px;}
+  .story-text .hl{background:linear-gradient(transparent 62%, #FBD9CB 62%); font-weight:700; color:var(--accent);}
+  .story-nav{display:flex; justify-content:center; gap:12px; margin-top:26px; flex-wrap:wrap;}
+
+  /* ---------- 題目通用 ---------- */
+  .q-head{display:flex; align-items:center; gap:10px; margin-bottom:6px;}
+  .q-tag{background:var(--accent); color:#fff; font-size:clamp(11px,1.6vw,13px); font-weight:800;
+    padding:4px 14px; border-radius:999px; white-space:nowrap;}
+  .q-tag.blue{background:var(--primary);}
+  .q-title{font-size:clamp(16px,2.8vw,24px); font-weight:800; color:var(--primary); margin:6px 0 4px; line-height:1.4;}
+  .q-desc{font-size:clamp(13px,1.9vw,17px); color:var(--grey); margin:0 0 16px; line-height:1.6;}
+
+  .panel{background:#fff; border-radius:20px; box-shadow:var(--shadow); padding:clamp(16px,3vw,30px);
+    max-width:920px; width:100%; margin:0 auto;}
+
+  /* 選項按鈕 */
+  .opts{display:grid; gap:12px;}
+  .opts.two{grid-template-columns:1fr 1fr;}
+  .opt{
+    border:2.5px solid var(--support); background:#fff; border-radius:16px; cursor:pointer;
+    padding:clamp(13px,2.4vw,20px); font-size:clamp(16px,2.6vw,23px); font-weight:700; color:var(--ink);
+    font-family:inherit; transition:all .15s ease; text-align:center;
+  }
+  .opt:hover{border-color:var(--primary2); transform:translateY(-2px); box-shadow:0 6px 16px rgba(47,93,140,.12);}
+  .opt.correct{border-color:var(--good); background:var(--goodbg); color:var(--good);}
+  .opt.wrong{border-color:var(--bad); background:var(--badbg); color:var(--bad);}
+  .opt:disabled{cursor:default; transform:none;}
+
+  /* 拖曳分類 */
+  .drag-area{display:flex; gap:clamp(12px,2vw,22px); flex-wrap:wrap; justify-content:center;}
+  .tokens{display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-bottom:16px; min-height:56px;}
+  .token{
+    background:var(--primary); color:#fff; border-radius:14px; padding:12px 20px; font-weight:800;
+    font-size:clamp(16px,2.4vw,21px); cursor:grab; user-select:none; touch-action:none;
+    box-shadow:0 5px 14px rgba(47,93,140,.28); transition:transform .15s, opacity .2s;
+  }
+  .token:active{cursor:grabbing;}
+  .token.dragging{transform:scale(1.12); opacity:.92; z-index:999;}
+  .token.ghost{opacity:.28;}
+  .bin{
+    flex:1; min-width:180px; min-height:150px; border:3px dashed var(--primary2); border-radius:18px;
+    background:rgba(47,93,140,.05); display:flex; flex-direction:column; align-items:center;
+    padding:12px; transition:all .15s; gap:8px;
+  }
+  .bin.even{border-color:var(--primary);}
+  .bin.odd{border-color:var(--accent);}
+  .bin.hot{background:rgba(228,99,58,.12); transform:scale(1.02);}
+  .bin-label{font-weight:800; font-size:clamp(14px,2vw,18px); margin-bottom:2px;}
+  .bin.even .bin-label{color:var(--primary);}
+  .bin.odd .bin-label{color:var(--accent);}
+  .bin-items{display:flex; gap:8px; flex-wrap:wrap; justify-content:center;}
+
+  /* 點選格子 */
+  .grid{display:grid; gap:clamp(8px,1.4vw,14px); justify-content:center;}
+  .cell{
+    width:clamp(52px,9vw,84px); height:clamp(52px,9vw,84px); border-radius:16px; border:3px solid var(--support);
+    background:#fff; font-size:clamp(19px,3vw,30px); font-weight:800; color:var(--ink); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; transition:all .15s; font-family:inherit;
+    box-shadow:0 3px 10px rgba(0,0,0,.05);
+  }
+  .cell:hover{transform:translateY(-3px); border-color:var(--primary2);}
+  .cell.sel{border-color:var(--accent); background:#FBE6DD; color:var(--accent); transform:scale(1.06);}
+  .cell.right{border-color:var(--good); background:var(--goodbg); color:var(--good);}
+  .cell.miss{border-color:var(--bad); background:var(--badbg); color:var(--bad); animation:shake .4s;}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+  /* 輸入區 */
+  .input-row{display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap;}
+  .num-input{
+    width:clamp(120px,20vw,180px); padding:14px 18px; font-size:clamp(18px,2.4vw,24px); font-weight:800;
+    border:2.5px solid var(--support); border-radius:14px; font-family:inherit; text-align:center; color:var(--primary);
+  }
+  .num-input:focus{outline:none; border-color:var(--primary2);}
+  .long-input{
+    width:100%; min-height:110px; padding:14px 18px; font-size:clamp(15px,1.9vw,18px);
+    border:2.5px solid var(--support); border-radius:14px; font-family:inherit; color:var(--ink);
+    resize:vertical; line-height:1.6;
+  }
+  .long-input:focus{outline:none; border-color:var(--primary2);}
+  .hint{font-size:clamp(12px,1.6vw,14px); color:var(--grey); margin-top:8px; text-align:center;}
+
+  /* 反饋 */
+  .feedback{
+    margin-top:18px; padding:16px 20px; border-radius:16px; font-size:clamp(13px,1.9vw,17px);
+    line-height:1.7; display:none; animation:slideIn .3s ease;
+  }
+  @keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .feedback.show{display:block;}
+  .feedback.ok{background:var(--goodbg); color:#1F7050; border-left:6px solid var(--good);}
+  .feedback.no{background:var(--badbg); color:#A33227; border-left:6px solid var(--bad);}
+  .feedback b{color:inherit;}
+
+  .q-actions{display:flex; gap:12px; justify-content:center; margin-top:22px; flex-wrap:wrap;}
+
+  /* 迷你數列顯示 */
+  .seq{display:flex; gap:clamp(6px,1.4vw,14px); justify-content:center; flex-wrap:wrap; margin:16px 0;}
+  .seq .n{
+    min-width:clamp(46px,7vw,64px); padding:12px 6px; border-radius:14px; background:#fff; border:2.5px solid var(--support);
+    font-size:clamp(18px,2.8vw,26px); font-weight:800; color:var(--primary); text-align:center;
+    box-shadow:0 3px 10px rgba(0,0,0,.05);
+  }
+  .seq .n.q{color:var(--accent); border-color:var(--accent); border-style:dashed;}
+
+  /* 結算 */
+  #s-end{justify-content:center; align-items:center; text-align:center;
+    background:radial-gradient(1200px 700px at 50% -10%, #FBE9E0 0%, var(--bg) 60%);}
+  .medal{width:130px;height:130px;border-radius:50%;background:linear-gradient(145deg,#F3C04E,#E4633A);
+    display:flex;align-items:center;justify-content:center;font-size:62px; margin:0 auto 16px;
+    box-shadow:0 14px 40px rgba(228,99,58,.42); animation:pop .8s cubic-bezier(.2,1.4,.5,1) both;}
+  .end-title{font-size:clamp(26px,5vw,44px); font-weight:800; color:var(--primary); margin:0 0 8px;}
+  .end-sub{font-size:clamp(15px,2.4vw,21px); color:var(--accent); font-weight:700; margin:0 0 14px;}
+  .end-stat{font-size:clamp(14px,2.2vw,19px); color:var(--grey); line-height:1.9; margin-bottom:22px;}
+  .end-stat b{color:var(--primary); font-size:1.15em;}
+  .bigstars{font-size:clamp(30px,6vw,52px); letter-spacing:8px; margin-bottom:14px;}
+  .bigstars .s{opacity:.22; transition:opacity .6s, transform .6s;}
+  .bigstars .s.lit{opacity:1; transform:scale(1.15);}
+
+  /* 小進度點 */
+  .dots{display:flex; gap:8px; justify-content:center; margin-bottom:10px;}
+  .dot{width:9px;height:9px;border-radius:50%;background:rgba(47,93,140,.2); transition:all .3s;}
+  .dot.on{background:var(--accent); transform:scale(1.35);}
+  .dot.done{background:var(--good);}
+
+  .confetti{position:fixed; width:11px; height:11px; border-radius:2px; top:-20px; z-index:9999; pointer-events:none;}
+  @keyframes fall{to{transform:translateY(105vh) rotate(720deg); opacity:.2;}}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ 頂欄 ============ -->
+  <div id="topbar">
+    <div class="tb-title">🔍 奇偶之謎</div>
+    <div class="progress-wrap"><div class="progress-bar" id="pbar"></div></div>
+    <div class="stars" id="starBar"></div>
+  </div>
+
+  <!-- ============ 封面 ============ -->
+  <section class="screen on" id="s-cover">
+    <div class="cover-badge">🔍</div>
+    <h1 class="cover-title">規律偵探</h1>
+    <div class="cover-sub">第一關 · 奇偶之謎</div>
+    <p class="cover-story">
+      奇偶王國的數字們亂成一團，<b>奇數</b>和<b>偶數</b>全混在一起了！<br>
+      國王請你這位「規律偵探」出馬，通過 <b>6 個關卡</b>，<br>
+      把數字歸位，找出藏在背後的祕密。<br>
+      每闖一關，就能收集一顆 ⭐ 星章。
+    </p>
+    <button class="btn btn-accent" onclick="startGame()">開始偵查 ▸</button>
+    <div style="margin-top:22px; font-size:clamp(12px,1.7vw,14px); color:var(--grey)">
+      👉 小提示：全部答對，就能拿到「奇偶大師」徽章！
+    </div>
+  </section>
+
+  <!-- ============ 故事導入 ============ -->
+  <section class="screen" id="s-story">
+    <div class="story-card">
+      <div class="story-emoji">📜</div>
+      <h2 class="story-title">偵探任務書</h2>
+      <p class="story-text">親愛的偵探，你好。</p>
+      <p class="story-text">奇偶王國最近發生了一件大事——所有的數字都<b>失去了秩序</b>。</p>
+      <p class="story-text">要讓它們重新排好隊，你得先弄清楚一件事：</p>
+      <p class="story-text"><span class="hl">一個數字，到底是奇數還是偶數？</span></p>
+      <p class="story-text">記住這個口訣：<b>能兩兩成對、沒有落單的就是偶數；會落單一個的，就是奇數。</b></p>
+      <p class="story-text">準備好了嗎？第一關就要開始了 🚀</p>
+      <div class="story-nav">
+        <button class="btn btn-primary" onclick="goStage(0)">出發！進入第 1 關 ▸</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 關卡容器 ============ -->
+  <section class="screen" id="s-play">
+    <div class="dots" id="dots"></div>
+    <div class="panel" id="playPanel"></div>
+  </section>
+
+  <!-- ============ 結算 ============ -->
+  <section class="screen" id="s-end">
+    <div class="medal" id="endEmoji">🏅</div>
+    <h1 class="end-title" id="endTitle">任務完成！</h1>
+    <div class="end-sub" id="endSub">你正式成為「奇偶大師」！</div>
+    <div class="bigstars" id="endStars"></div>
+    <div class="end-stat" id="endStat"></div>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center">
+      <button class="btn btn-primary" onclick="restart()">再玩一次 ↻</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* ============================================================
+   隨機出題工具（每次進關都重新生成，答案位置也會換）
+   ============================================================ */
+function ri(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+function shuffle(a){
+  const r = a.slice();
+  for(let i=r.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    const t = r[i]; r[i]=r[j]; r[j]=t;
+  }
+  return r;
+}
+function randOdd(min,max){ let n = ri(min,max); if(n%2===0) n+=1; if(n>max) n-=2; return n; }
+function randEven(min,max){ let n = ri(min,max); if(n%2!==0) n+=1; if(n>max) n-=2; return n; }
+
+/* 第 1 關：1 個奇數 + 3 個偶數，亂數產生，隨機排位 */
+function genStage1(){
+  const odd = randOdd(11,99);
+  const evens = [];
+  let guard = 0;
+  while(evens.length < 3 && guard++ < 300){
+    const e = randEven(12,98);
+    if(e !== odd && !evens.includes(e)) evens.push(e);
+  }
+  const opts = shuffle([odd].concat(evens));
+  const sortedEvens = evens.slice().sort((a,b)=>a-b);
+  return {
+    options: opts.map(String),
+    answer: opts.indexOf(odd),
+    okTip:`太棒了！${odd} 兩兩成對後會落單 1 個，所以是奇數。`,
+    noTip:`再想想～ ${sortedEvens.join('、')} 都能兩兩成對，只有 ${odd} 會落單，所以它是奇數。`
+  };
+}
+
+/* 第 2 關：3 個偶數 + 3 個奇數，亂數產生 */
+function genStage2(){
+  const evens = [], odds = [];
+  let guard = 0;
+  while(evens.length < 3 && guard++ < 300){
+    const v = randEven(12,198);
+    if(!evens.includes(v)) evens.push(v);
+  }
+  guard = 0;
+  while(odds.length < 3 && guard++ < 300){
+    const v = randOdd(11,199);
+    if(!odds.includes(v)) odds.push(v);
+  }
+  const items = evens.map(v=>[String(v),'even']).concat(odds.map(v=>[String(v),'odd']));
+  return {
+    items: shuffle(items),
+    okTip:'全部歸位！你的「兩個一數」判斷法很熟練。'
+  };
+}
+
+/* 第 3 關：8 格，4 個奇數 + 4 個偶數，亂數產生並洗牌 */
+function genStage3(){
+  const evens = [], odds = [];
+  let guard = 0;
+  while(evens.length < 4 && guard++ < 300){
+    const v = randEven(12,98);
+    if(!evens.includes(v)) evens.push(v);
+  }
+  guard = 0;
+  while(odds.length < 4 && guard++ < 300){
+    const v = randOdd(11,99);
+    if(!odds.includes(v)) odds.push(v);
+  }
+  const cells = shuffle(evens.concat(odds)).map(String);
+  return {
+    cells,
+    answerCells: cells.filter(v => Number(v) % 2 === 1),
+    okTip:'眼力真好！4 個奇數全被找出來了。',
+    noTip:'再看看最後一位數字：1、3、5、7、9 結尾的才是奇數。'
+  };
+}
+
+/* 第 4 關：奇偶相加三種組合輪流出，答案選項也洗牌 */
+function genStage4(){
+  const forms = [
+    { t:'奇數 + 奇數 = ？', label:'兩個奇數相加', ans:'even', rule:'奇＋奇＝偶', eg:[[3,5],[7,9]] },
+    { t:'奇數 + 偶數 = ？', label:'一個奇數和一個偶數相加', ans:'odd',  rule:'奇＋偶＝奇', eg:[[3,6],[9,14]] },
+    { t:'偶數 + 偶數 = ？', label:'兩個偶數相加', ans:'even', rule:'偶＋偶＝偶', eg:[[4,6],[12,20]] }
+  ];
+  const f = forms[ri(0, forms.length-1)];
+  const opts = shuffle(['一定是偶數','一定是奇數','有時奇、有時偶','等於 0']);
+  const ansText = f.ans === 'even' ? '一定是偶數' : '一定是奇數';
+  const egStr = f.eg.map(p => `${p[0]}+${p[1]}=${p[0]+p[1]}（${(p[0]+p[1])%2?'奇':'偶'}）`).join('、');
+  return {
+    title: f.t,
+    desc: `不用把答案算出來，用「兩個一數」想一想：${f.label}，結果會是奇數還是偶數？`,
+    options: opts,
+    answer: opts.indexOf(ansText),
+    okTip: `沒錯！例如${egStr}，所以${f.rule}。`,
+    noTip: `試試看：${egStr}。規律是——${f.rule}。`
+  };
+}
+
+/* 第 5 關：兩個兩位數，奇偶組合每次不同，選項順序也洗牌 */
+function genStage5(){
+  let a, b;
+  do { a = ri(12,89); b = ri(12,89); } while(a === b);
+  const sumOdd = (a + b) % 2 === 1;
+  const opts = shuffle(['奇數','偶數']);
+  const ansWord = sumOdd ? '奇數' : '偶數';
+  const pa = a % 2 ? '奇' : '偶';
+  const pb = b % 2 ? '奇' : '偶';
+  const pr = sumOdd ? '奇' : '偶';
+  return {
+    desc: `${a} + ${b} 的結果是奇數還是偶數？請選出你的判斷。`,
+    options: opts,
+    answer: opts.indexOf(ansWord),
+    okTip: `推理正確！${a} 是${pa}數、${b} 是${pb}數，${pa}＋${pb}＝${pr}，所以結果一定是${ansWord}。`,
+    noTip: `看奇偶就好：${a} 是${pa}數、${b} 是${pb}數，${pa}＋${pb}＝${pr}。所以結果是${ansWord}。`
+  };
+}
+
+/* 取得當前關卡的題目資料：有 gen 就重新生成一份 */
+function stageData(i){
+  const s = STAGES[i];
+  return (typeof s.gen === 'function') ? Object.assign({}, s, s.gen()) : s;
+}
+
+/* ============================================================
+   資料
+   ============================================================ */
+const STAGES = [
+  /* ---------- 1. 選擇題：判斷奇偶（每次隨機生成） ---------- */
+  {
+    type:'choice', tag:'第 1 關 · 認識奇偶', tagBlue:false,
+    title:'哪一個數是奇數？',
+    desc:'仔細看看，只有一個數字是奇數哦。（每次再玩，數字都會換新！）',
+    gen:genStage1
+  },
+  /* ---------- 2. 拖曳分類（每次隨機生成） ---------- */
+  {
+    type:'sort', tag:'第 2 關 · 數字歸位', tagBlue:true,
+    title:'把數字拖進正確的框裡',
+    desc:'用手指（或滑鼠）把每個數字，拖到「奇數」或「偶數」的框裡。（每次的數字都不一樣！）',
+    gen:genStage2
+  },
+  /* ---------- 3. 格子點選（每次隨機生成，固定 4 個奇數） ---------- */
+  {
+    type:'pick', tag:'第 3 關 · 找出奇數', tagBlue:false,
+    title:'點出藏著的所有奇數',
+    desc:'在下面的數字方格裡，把「奇數」全部點出來（共 4 個）。點錯了會亮紅燈哦。',
+    gen:genStage3
+  },
+  /* ---------- 4. 規律推理：奇偶相加（三種組合輪流出） ---------- */
+  {
+    type:'choice', tag:'第 4 關 · 奇偶規律', tagBlue:true,
+    desc:'不用把答案算出來，用「兩個一數」想：結果會是奇數還是偶數？',
+    gen:genStage4
+  },
+  /* ---------- 5. 填空推理：不用計算判斷（每次換兩個數） ---------- */
+  {
+    type:'input', tag:'第 5 關 · 推理挑戰', tagBlue:false,
+    title:'不計算，也能判斷！',
+    gen:genStage5,
+    work:true
+  },
+  /* ---------- 6. 開放式解釋 ---------- */
+  {
+    type:'open', tag:'最終關 · 說出道理', tagBlue:true,
+    title:'請說明你的推理過程',
+    desc:'在數列 1, 3, 5, 7, 9, … 中，第 20 個數是奇數還是偶數？請寫下你的想法。（寫幾個關鍵字就可以）',
+    options:['奇數','偶數'],
+    answer:0,
+    keywords:['奇','單'],
+    okTip:'推理高手！這個數列全是奇數（1、3、5、7…），所以第 20 個當然還是奇數。',
+    noTip:'想一想：這個數列是 1、3、5、7、9… 全都是奇數，不管第幾個，都還是奇數哦。'
+  }
+];
+
+/* ============================================================
+   狀態
+   ============================================================ */
+let cur = -1;         // 當前關卡索引
+let stars = 0;        // 星章數
+let answered = false; // 本關是否已作答
+let firstTry = false;
+
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+function show(id){
+  $$('.screen').forEach(e=>e.classList.remove('on'));
+  $(id).classList.add('on');
+}
+function setTopbar(on){ $('#topbar').classList.toggle('on', on); }
+
+function updateHUD(){
+  const pct = cur < 0 ? 0 : ((cur) / STAGES.length) * 100;
+  $('#pbar').style.width = pct + '%';
+  const sb = $('#starBar');
+  sb.innerHTML = '';
+  for(let i=0;i<STAGES.length;i++){
+    const s = document.createElement('span');
+    s.className = 's' + (i < stars ? ' lit' : '');
+    s.textContent = '⭐';
+    sb.appendChild(s);
+  }
+}
+
+function startGame(){
+  cur = -1; stars = 0; 
+  show('#s-story'); setTopbar(false);
+}
+
+function restart(){
+  cur = -1; stars = 0;
+  show('#s-cover'); setTopbar(false);
+}
+
+function goStage(i){
+  cur = i; answered = false; firstTry = true;
+  setTopbar(true); updateHUD();
+  renderDots();
+  show('#s-play');
+  renderStage();
+}
+
+function renderDots(){
+  const d = $('#dots'); d.innerHTML = '';
+  for(let i=0;i<STAGES.length;i++){
+    const e = document.createElement('div');
+    e.className = 'dot' + (i===cur?' on':'') + (i<cur?' done':'');
+    d.appendChild(e);
+  }
+}
+
+/* ============================================================
+   渲染關卡
+   ============================================================ */
+function renderStage(){
+  const st = stageData(cur);
+  const P = $('#playPanel');
+  P.innerHTML = '';
+  const head = document.createElement('div');
+  head.innerHTML = `<div class="q-head"><span class="q-tag ${st.tagBlue?'blue':''}">${st.tag}</span></div>
+    <h2 class="q-title">${st.title}</h2><p class="q-desc">${st.desc}</p>`;
+  P.appendChild(head);
+
+  if(st.type==='choice') renderChoice(st,P);
+  else if(st.type==='sort') renderSort(st,P);
+  else if(st.type==='pick') renderPick(st,P);
+  else if(st.type==='input') renderInput(st,P);
+  else if(st.type==='open') renderOpen(st,P);
+
+  const fb = document.createElement('div');
+  fb.className='feedback'; fb.id='fb';
+  P.appendChild(fb);
+  const act = document.createElement('div');
+  act.className='q-actions'; act.id='acts';
+  P.appendChild(act);
+}
+
+/* ---------- 選擇題 ---------- */
+function renderChoice(st,P){
+  const box = document.createElement('div'); box.className='opts';
+  st.options.forEach((o,i)=>{
+    const b = document.createElement('button'); b.className='opt'; b.textContent=o;
+    b.onclick = ()=>{
+      if(answered) return;
+      answered = true;
+      const ok = i===st.answer;
+      $$('.opt').forEach(x=>x.disabled=true);
+      b.classList.add(ok?'correct':'wrong');
+      if(!ok) $$('.opt')[st.answer].classList.add('correct');
+      finishStage(ok, st.okTip, st.noTip);
+    };
+    box.appendChild(b);
+  });
+  P.appendChild(box);
+}
+
+/* ---------- 拖曳分類 ---------- */
+function renderSort(st,P){
+  const tokWrap = document.createElement('div'); tokWrap.className='tokens'; tokWrap.id='tokens';
+  const order = [...st.items].sort(()=>Math.random()-0.5);
+  order.forEach(([v])=>{
+    const t = document.createElement('div'); t.className='token'; t.textContent=v;
+    t.dataset.val=v; tokWrap.appendChild(t);
+  });
+  P.appendChild(tokWrap);
+
+  const area = document.createElement('div'); area.className='drag-area';
+  [['even','偶數 Even'],['odd','奇數 Odd']].forEach(([k,label])=>{
+    const bin = document.createElement('div'); bin.className='bin '+k; bin.dataset.bin=k;
+    bin.innerHTML = `<div class="bin-label">${label}</div><div class="bin-items"></div>`;
+    area.appendChild(bin);
+  });
+  P.appendChild(area);
+
+  let placed = 0;
+  const total = st.items.length;
+  let wrongCount = 0;
+
+  // 統一指標事件（支援觸控 + 滑鼠）
+  makeDraggable(tokWrap, area, (bin, el)=>{
+    if(!el) return;
+    const val = el.dataset.val;
+    const correctBin = st.items.find(([v])=>v===val)[1];
+    const ok = bin.dataset.bin === correctBin;
+    if(!ok){ wrongCount++; }
+    const clone = document.createElement('div');
+    clone.className='token'; clone.textContent = val;
+    clone.style.background = ok ? 'var(--good)' : 'var(--bad)';
+    clone.style.cursor='default';
+    bin.querySelector('.bin-items').appendChild(clone);
+    el.remove();
+    placed++;
+    if(placed===total){
+      const ok2 = wrongCount===0;
+      const extra = ok2 ? st.okTip : st.okTip + ` （有 ${wrongCount} 個放錯了，下次注意囉）`;
+      finishStage(ok2, extra, '');
+    }
+  });
+}
+
+let currentDrag = null;
+function makeDraggable(container, area, onDrop){
+  // 事件委派：從 token 開始拖
+  const start = (e, fromEl)=>{
+    const el = fromEl || e.target.closest('.token');
+    if(!el || el.classList.contains('dragging')) return;
+    currentDrag = el;
+    el.classList.add('dragging');
+    el.style.position='fixed';
+    el.style.left = (e.clientX-30)+'px';
+    el.style.top = (e.clientY-22)+'px';
+    el.style.pointerEvents='none';
+    el.dataset.offx = 30; el.dataset.offy = 22;
+  };
+  const move = (e)=>{
+    if(!currentDrag) return;
+    e.preventDefault();
+    currentDrag.style.left = (e.clientX-30)+'px';
+    currentDrag.style.top = (e.clientY-22)+'px';
+    // 高亮
+    const bin = binAt(e.clientX, e.clientY, area);
+    $$('.bin').forEach(b=>b.classList.toggle('hot', b===bin));
+  };
+  const end = (e)=>{
+    if(!currentDrag) return;
+    const bin = binAt(e.clientX, e.clientY, area);
+    const el = currentDrag; currentDrag = null;
+    el.classList.remove('dragging');
+    $$('.bin').forEach(b=>b.classList.remove('hot'));
+    if(bin){ onDrop(bin, el); }
+    else{
+      // 歸位
+      el.style.position=''; el.style.left=''; el.style.top=''; el.style.pointerEvents='';
+    }
+  };
+  container.addEventListener('pointerdown', e=>{
+    if(e.target.closest('.token')) start(e);
+  });
+  window.addEventListener('pointermove', move, {passive:false});
+  window.addEventListener('pointerup', end);
+}
+function binAt(x,y,area){
+  let hit=null;
+  area.querySelectorAll('.bin').forEach(b=>{
+    const r=b.getBoundingClientRect();
+    if(x>=r.left && x<=r.right && y>=r.top && y<=r.bottom) hit=b;
+  });
+  return hit;
+}
+
+/* ---------- 點選格子 ---------- */
+function renderPick(st,P){
+  const g = document.createElement('div'); g.className='grid';
+  g.style.gridTemplateColumns = 'repeat(4, auto)';
+  const sel = new Set();
+  st.cells.forEach(v=>{
+    const c = document.createElement('button'); c.className='cell'; c.textContent=v;
+    c.onclick = ()=>{
+      if(answered) return;
+      if(c.classList.contains('sel')){ c.classList.remove('sel'); sel.delete(v); }
+      else{ c.classList.add('sel'); sel.add(v); }
+      checkDone();
+    };
+    g.appendChild(c);
+  });
+  P.appendChild(g);
+  const hint = document.createElement('div'); hint.className='hint';
+  hint.id='pickHint'; hint.textContent = `已選 ${0} / ${st.answerCells.length} 個奇數`;
+  P.appendChild(hint);
+
+  function checkDone(){
+    hint.textContent = `已選 ${sel.size} / ${st.answerCells.length} 個奇數`;
+    if(sel.size !== st.answerCells.length) return;
+    // 判斷
+    answered = true;
+    let allRight = true;
+    $$('.cell').forEach(c=>{
+      const v = c.textContent;
+      const should = st.answerCells.includes(v);
+      const is = sel.has(v);
+      if(should && is){ c.classList.remove('sel'); c.classList.add('right'); }
+      else if(should && !is){ c.classList.add('miss'); allRight=false; }
+      else if(!should && is){ c.classList.add('miss'); allRight=false; }
+    });
+    finishStage(allRight, st.okTip, st.noTip);
+  }
+}
+
+/* ---------- 填空推理 ---------- */
+function renderInput(st,P){
+  const box = document.createElement('div'); box.className='opts two';
+  st.options.forEach((o,i)=>{
+    const b=document.createElement('button'); b.className='opt'; b.textContent=o;
+    b.onclick=()=>{
+      if(answered) return; answered=true;
+      const ok = i===st.answer;
+      $$('.opt').forEach(x=>x.disabled=true);
+      b.classList.add(ok?'correct':'wrong');
+      if(!ok) $$('.opt')[st.answer].classList.add('correct');
+      finishStage(ok, st.okTip, st.noTip);
+    };
+    box.appendChild(b);
+  });
+  P.appendChild(box);
+}
+
+/* ---------- 開放式解釋 ---------- */
+function renderOpen(st,P){
+  const box = document.createElement('div'); box.className='opts two';
+  st.options.forEach((o,i)=>{
+    const b=document.createElement('button'); b.className='opt'; b.textContent=o;
+    b.dataset.i=i;
+    b.onclick=()=>{
+      if(answered) return;
+      $$('.opt').forEach(x=>x.classList.remove('correct','wrong'));
+      b.classList.add('correct');
+      b.dataset.picked=i;
+    };
+    box.appendChild(b);
+  });
+  P.appendChild(box);
+
+  const ta = document.createElement('textarea'); ta.className='long-input'; ta.style.marginTop='14px';
+  ta.placeholder='例如：因為這個數列都是 1、3、5、7… 全都是奇數，所以第 20 個也是奇數。';
+  P.appendChild(ta);
+  const hint = document.createElement('div'); hint.className='hint';
+  hint.textContent = '先選答案，再寫下你的理由，就可以按「提交答案」。';
+  P.appendChild(hint);
+
+  const act = document.createElement('div'); act.className='q-actions';
+  act.innerHTML = `<button class="btn btn-accent" id="openSubmit">提交答案 ▸</button>`;
+  P.appendChild(act);
+
+  $('#openSubmit').onclick = ()=>{
+    if(answered) return;
+    const picked = $('.opt[data-picked]');
+    if(!picked){ hint.textContent='請先選一個答案（奇數或偶數）。'; hint.style.color='var(--bad)'; return; }
+    const okChoice = parseInt(picked.dataset.picked) === st.answer;
+    const txt = ta.value.trim();
+    const hasReason = st.keywords.some(k=>txt.includes(k)) || txt.length >= 6;
+    answered = true;
+    $$('.opt').forEach(x=>x.disabled=true);
+    ta.disabled = true;
+    const ok = okChoice; // 判斷以答案為主，理由作為加分提示
+    let tip = ok ? st.okTip : st.noTip;
+    if(!okChoice && hasReason) tip += ' 你的理由寫得不錯，再核對一下答案的奇偶。';
+    if(ok && !hasReason) tip += ' 下次試著把「為什麼」也寫清楚，就更棒了！';
+    finishStage(ok, tip, '');
+    act.innerHTML = '';
+  };
+}
+
+/* ============================================================
+   完成一關
+   ============================================================ */
+function finishStage(ok, okTip, noTip){
+  const fb = $('#fb');
+  fb.className = 'feedback show ' + (ok?'ok':'no');
+  fb.innerHTML = (ok?'✅ ':'💡 ') + (ok? okTip : (noTip||okTip));
+  if(ok){
+    stars++;
+    updateHUD();
+    burstConfetti(ok===true && firstTry ? 18 : 10);
+  }
+  const act = $('#acts');
+  act.innerHTML = '';
+  if(ok){
+    const last = cur === STAGES.length-1;
+    const b = document.createElement('button');
+    b.className = 'btn btn-primary';
+    b.textContent = last ? '查看結果 🏅' : '下一關 ▸';
+    b.onclick = ()=> last ? endGame() : goStage(cur+1);
+    act.appendChild(b);
+  }else{
+    const b = document.createElement('button');
+    b.className = 'btn btn-ghost';
+    b.textContent = '再試一次 ↻';
+    b.onclick = ()=>{ goStage(cur); };
+    act.appendChild(b);
+    const s = document.createElement('button');
+    s.className = 'btn btn-primary';
+    s.textContent = '先看下一關 ▸';
+    s.onclick = ()=>{ if(cur < STAGES.length-1) goStage(cur+1); else endGame(); };
+    act.appendChild(s);
+  }
+}
+
+function burstConfetti(n){
+  const colors=['#E4633A','#2F5D8C','#F3C04E','#2E9E6B','#3E7BB0'];
+  for(let i=0;i<n;i++){
+    const c=document.createElement('div'); c.className='confetti';
+    c.style.left = Math.random()*100+'vw';
+    c.style.background = colors[Math.floor(Math.random()*colors.length)];
+    c.style.animation = `fall ${1.4+Math.random()*1.2}s linear forwards`;
+    c.style.animationDelay = (Math.random()*0.3)+'s';
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(), 3200);
+  }
+}
+
+/* ============================================================
+   結算
+   ============================================================ */
+function endGame(){
+  setTopbar(false);
+  show('#s-end');
+  const total = STAGES.length;
+  const es = $('#endStars'); es.innerHTML='';
+  for(let i=0;i<total;i++){
+    const s=document.createElement('span'); s.className='s'+(i<stars?' lit':'');
+    s.textContent='⭐'; es.appendChild(s);
+    setTimeout(()=>s.classList.add('lit'), 150*i+200);
+  }
+  let title, sub, emoji;
+  if(stars===total){ title='完美破案！'; sub='你正式成為「奇偶大師」！'; emoji='🏅'; }
+  else if(stars>=total*0.66){ title='任務完成！'; sub='你是很棒的「規律小偵探」！'; emoji='🎖️'; }
+  else{ title='任務完成！'; sub='繼續加油，再多練習幾次就熟練了！'; emoji='🌟'; }
+  $('#endTitle').textContent = title;
+  $('#endSub').textContent = sub;
+  $('#endEmoji').textContent = emoji;
+  $('#endStat').innerHTML = `本回合共獲得 <b>${stars} / ${total}</b> 顆星章<br>
+    記住今天的口訣：<b>能兩兩成對就是偶數，會落單就是奇數</b>。<br>
+    下一關，我們就要挑戰「數列的規律」啦！`;
+  if(stars===total) burstConfetti(50);
+  else burstConfetti(24);
+}
+
+/* 初始化 */
+updateHUD();
+</script>
+</body>
+</html>
